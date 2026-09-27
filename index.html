@@ -1,0 +1,2615 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<script>
+  // Βαρδιολόγιο: έκδοση για GitHub Pages με αποθήκευση σε Google Sheet.
+  window.VARDIOLOGIO_REMOTE = true;
+  // Προαιρετικά: βάλε εδώ τη διεύθυνση του Apps Script (…/exec) για να μη ζητείται στη σύνδεση.
+  window.VARDIOLOGIO_API = "https://script.google.com/macros/s/AKfycbxz6z_6OoNP9otRMeBlWl7nVBKIiz9aayUrHDYn_WxfYN5DuB6jG_x7SfELk30mJQkm/exec";
+</script>
+</head>
+<body>
+<title>Βαρδιολόγιο</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#EDEDED; --surface:#FFFFFF; --surface-2:#F7F7F7; --surface-3:#EDEDED;
+  --ink:#181818; --ink-2:#3B3B3B; --muted:#787878; --line:#DBDBDB; --line-2:#C7C7C7;
+  --accent:#00AD74; --accent-soft:#DDF8EC; --accent-ink:#FFFFFF; --accent-text:#00875A;
+  --danger:#D63B3B; --danger-soft:#FBE6E6; --warn:#B56F00; --warn-soft:#FCF1DE; --ok:#00875A; --ok-soft:#DDF8EC;
+  --wkend:#E6F8F0; --hol:#FDF1DC; --holmark:#E09A1F; --prev:#F7F7F7;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.08);
+  --f-ui:"Roboto",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-mono:"Roboto Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#181818; --surface:#242424; --surface-2:#2A2A2A; --surface-3:#3B3B3B;
+    --ink:#F7F7F7; --ink-2:#C7C7C7; --muted:#919191; --line:#303030; --line-2:#3B3B3B;
+    --accent:#1DCF8E; --accent-soft:#143A2C; --accent-ink:#181818; --accent-text:#5AE4AA;
+    --danger:#FF6B6B; --danger-soft:#3A1F1F; --warn:#F2B45A; --warn-soft:#3A2E1A; --ok:#5AE4AA; --ok-soft:#143A2C;
+    --wkend:#243A30; --hol:#3A3020; --holmark:#F2B45A; --prev:#1E1E1E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#181818; --surface:#242424; --surface-2:#2A2A2A; --surface-3:#3B3B3B;
+  --ink:#F7F7F7; --ink-2:#C7C7C7; --muted:#919191; --line:#303030; --line-2:#3B3B3B;
+  --accent:#1DCF8E; --accent-soft:#143A2C; --accent-ink:#181818; --accent-text:#5AE4AA;
+  --danger:#FF6B6B; --danger-soft:#3A1F1F; --warn:#F2B45A; --warn-soft:#3A2E1A; --ok:#5AE4AA; --ok-soft:#143A2C;
+  --wkend:#243A30; --hol:#3A3020; --holmark:#F2B45A; --prev:#1E1E1E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;text-wrap:balance}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---- top bar ---- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 16px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{font-size:19px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+.brand h1::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--accent);box-shadow:6px 6px 0 -2px var(--accent-soft)}
+.brand small{color:var(--muted);font-size:12px}
+.monthnav{display:flex;align-items:center;gap:4px}
+.monthnav .lbl{min-width:150px;text-align:center;font-weight:600;font-size:15px}
+.save{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:2px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:9px 12px 10px;color:var(--ink-2);font-weight:500;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .cnt{font-family:var(--f-mono);font-size:11px;margin-left:6px;padding:1px 6px;border-radius:10px;background:var(--danger-soft);color:var(--danger)}
+
+main{padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;max-width:1500px;margin:0 auto}
+main>*{min-width:0}
+.card{min-width:0}
+
+/* ---- controls ---- */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:var(--surface);padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn.icon{padding:6px 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:6px 8px;min-width:0}
+input[type=number]{width:72px}
+input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line-2);border-radius:6px;background:none;cursor:pointer}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.end{justify-content:flex-end}
+.sp{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 11px;cursor:pointer;font-weight:500;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line-2)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-text)}
+.seg.tiny button{padding:3px 8px;font-size:12px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.card>.hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.card>.hd h2{font-size:15px;font-weight:600}
+.card>.hd .sub{color:var(--muted);font-size:12px}
+.card>.bd{padding:14px}
+.help{color:var(--muted);font-size:12.5px;max-width:70ch}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12.5px;font-weight:600}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--danger-soft);color:var(--danger)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;padding:0 6px;border-radius:5px;font-family:var(--f-mono);font-weight:700;font-size:12px}
+
+/* ---- roster grid ---- */
+.gridwrap{overflow-x:auto;border-radius:0 0 10px 10px}
+table.roster{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;min-width:100%}
+.roster th,.roster td{padding:0;text-align:center;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.roster thead th{background:var(--surface);position:sticky;top:0;z-index:2}
+.roster .lab{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;padding:0 10px;min-width:118px;max-width:150px;white-space:nowrap;font-weight:600;font-size:12.5px;border-right:1px solid var(--line-2)}
+.roster thead .lab{z-index:4}
+.roster .dh{width:40px;min-width:40px;padding:5px 0 4px;line-height:1.15}
+.roster .dh b{display:block;font-family:var(--f-mono);font-size:13px}
+.roster .dh span{display:block;font-size:10.5px;color:var(--muted);font-weight:500}
+.roster thead .we span,.roster thead .we b{color:var(--accent-text);font-weight:700}
+.roster .ho,.roster thead .ho{background:var(--hol)}
+.roster thead .ho b{position:relative}
+.roster thead .ho span{color:var(--holmark);font-weight:700}
+.roster thead .ho::after{content:"";position:absolute;left:50%;bottom:2px;width:14px;height:2px;margin-left:-7px;border-radius:1px;background:var(--holmark)}
+.roster thead th.dh{position:sticky}
+.roster .wk{border-left:3px solid var(--bg)}
+.roster .lvc.sp{background:transparent!important;color:var(--accent-text)!important;box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.roster td.c .v.spec{border:1.5px dashed var(--accent);color:var(--accent-text);font-size:10px}
+.roster .pv{background:var(--prev);opacity:.7}
+.roster .today b{color:var(--accent-text)}
+.roster td.c{height:34px;cursor:pointer;position:relative}
+.roster td.c .v{position:absolute;inset:3px;display:flex;align-items:center;justify-content:center;border-radius:5px;font-family:var(--f-mono);font-weight:700;font-size:12.5px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.18)}
+.roster td.c .v.empty{border:1.5px dashed var(--line-2);color:var(--muted);font-weight:500}
+.roster td.c .v.leave{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 6px);color:var(--ink-2);font-size:10.5px}
+.roster td.c:hover .v{box-shadow:0 0 0 2px var(--accent)}
+.roster td.c.sel .v{box-shadow:0 0 0 2px var(--accent),0 0 0 4px var(--accent-soft)}
+.roster td.c.bad .v{box-shadow:0 0 0 2px var(--danger)}
+.roster td.c.soft .v::after{content:"";position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--warn);border:1.5px solid var(--surface)}
+.roster td.c.bad .v::after{content:"";position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:1.5px solid var(--surface)}
+.roster .lk{position:absolute;left:2px;bottom:1px;font-size:9px;line-height:1;opacity:.85}
+.roster .lvrow td{height:auto;padding:3px 1px;vertical-align:top}
+.roster .lvrow .lvc{display:block;margin:1px auto;width:34px;border-radius:4px;font-family:var(--f-mono);font-size:10.5px;font-weight:700;color:#fff;padding:1px 0}
+.roster .sum{min-width:56px;padding:0 8px;font-family:var(--f-mono);font-size:12px;background:var(--surface-2)}
+.roster .sum.hd{font-family:var(--f-ui);font-size:11px;color:var(--muted);font-weight:600}
+.roster .sepr td,.roster .sepr th{border-top:2px solid var(--line-2)}
+.shiftlab{display:flex;align-items:center;gap:8px}
+.shiftlab i{width:4px;height:18px;border-radius:2px;display:inline-block}
+.shiftlab small{color:var(--muted);font-weight:500;font-family:var(--f-mono);font-size:10.5px}
+
+.emptybanner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;background:var(--accent-soft);color:var(--ink);border-bottom:1px solid var(--line)}
+
+/* ---- layout for schedule page ---- */
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.issues{list-style:none;margin:0;padding:0;display:grid}
+.issues li{display:flex;gap:10px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.issues li:last-child{border-bottom:0}
+.issues li:hover{background:var(--surface-2)}
+.issues .d{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:44px}
+.issues .sev{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+.issues .sev.h{background:var(--danger)}
+.issues .sev.s{background:var(--warn)}
+.okmsg{padding:18px 14px;color:var(--ok);font-weight:600}
+
+table.t{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.t th,.t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.t th{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;background:var(--surface-2)}
+.t td.n,.t th.n{text-align:right;font-family:var(--f-mono);font-size:12.5px}
+.t tr:last-child td{border-bottom:0}
+.twrap{overflow-x:auto}
+.meter{position:relative;height:6px;background:var(--surface-3);border-radius:3px;min-width:70px}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--ink-2)}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
+.dev{font-family:var(--f-mono);font-size:11.5px}
+.dev.up{color:var(--warn)} .dev.dn{color:var(--accent-text)}
+
+.errgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.errcat{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;border:1px solid var(--line);background:var(--surface-2);text-align:left;cursor:pointer;font-size:12.5px}
+.errcat:disabled{cursor:default}
+.errcat .ic{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.errcat .nm{flex:1}
+.errcat .ct{font-family:var(--f-mono);font-weight:700}
+.errcat.ok .ic{background:var(--ok-soft);color:var(--ok)}
+.errcat.ok .nm{color:var(--ink-2)}
+.errcat.bad{border-color:var(--danger);background:var(--danger-soft)}
+.errcat.bad .ic{background:var(--danger);color:#fff}
+.errcat.bad .ct{color:var(--danger)}
+.errcat.warn .ic{background:var(--warn);color:#fff}
+.errcat.warn .ct{color:var(--warn)}
+.errcat.on{box-shadow:0 0 0 2px var(--accent)}
+.errfilters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.errp{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:2px 7px 2px 2px;cursor:pointer;font-family:var(--f-mono);font-size:12px;font-weight:700}
+.errp.on{box-shadow:0 0 0 2px var(--accent)}
+.errgroup+.errgroup{border-top:1px solid var(--line)}
+.errgh{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:10px 14px 4px}
+.errgh .sev{width:8px;height:8px;border-radius:50%;align-self:center}
+.errgh .sev.h{background:var(--danger)} .errgh .sev.s{background:var(--warn)}
+.errgh b{font-size:13.5px}
+.errgroup .issues li{padding:6px 14px 6px 30px;border-bottom:0}
+.loginwrap{min-height:100vh;display:grid;place-items:center;padding:16px}
+.card.login{width:min(400px,100%)}
+/* ---- drawer ---- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow);z-index:50;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer .dhd{padding:14px 16px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.drawer .dhd h3{font-size:16px}
+.drawer .dbd{overflow-y:auto;flex:1}
+.cand{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0}
+.cand:hover{background:var(--surface-2)}
+.cand.cur{background:var(--accent-soft)}
+.cand .who{display:grid;gap:3px;flex:1;min-width:0}
+.cand .who strong{font-size:13.5px}
+.cand ul{margin:2px 0 0;padding-left:16px;color:var(--ink-2);font-size:12px}
+.cand .tag{font-size:11.5px;font-weight:600;white-space:nowrap}
+.tag.ok{color:var(--ok)} .tag.bad{color:var(--danger)} .tag.warn{color:var(--warn)}
+.scrim{position:fixed;inset:0;background:rgba(10,16,22,.35);z-index:45}
+
+/* ---- modal ---- */
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(10,16,22,.45)}
+.modal .box{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);width:min(760px,100%);max-height:88vh;overflow:auto;border:1px solid var(--line)}
+.modal .box>.hd{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.modal .box>.hd h2{font-size:17px}
+.modal .box>.bd{padding:16px 18px;display:grid;gap:14px}
+.progress{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.alts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.alt{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
+.alt.best{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.alt h3{font-size:14px}
+.alt dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12.5px}
+.alt dt{color:var(--ink-2)} .alt dd{margin:0;font-family:var(--f-mono);text-align:right}
+
+/* ---- staff ---- */
+.staffgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+@media (max-width:420px){.staffgrid{grid-template-columns:1fr}}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:grid}
+.person .ph{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.person .ph .code{width:64px;font-family:var(--f-mono);font-weight:700;text-align:center}
+.person .ph .nm{flex:1}
+.person .pb{padding:12px 14px;display:grid;gap:12px}
+.person.off{opacity:.6}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kv input[type=number]{width:100%}
+.avail{border-collapse:collapse;font-size:12px}
+.avail th{font-weight:600;color:var(--muted);padding:2px 3px;font-size:11px}
+.avail td{padding:2px}
+.avail button{width:30px;height:24px;border-radius:5px;border:1px solid var(--line-2);background:var(--ok-soft);color:var(--ok);font-family:var(--f-mono);font-size:11px;font-weight:700;cursor:pointer}
+.avail button[data-on="0"]{background:var(--surface-3);color:var(--muted);text-decoration:line-through}
+.sh-line{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.sh-line span{font-size:12.5px;font-weight:500}
+
+/* ---- rules ---- */
+.cov{display:grid;gap:6px}
+.covbar{position:relative;height:26px;background:repeating-linear-gradient(90deg,var(--surface-2) 0 calc(100%/24 - 1px),var(--line) calc(100%/24 - 1px) calc(100%/24));border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.covbar i{position:absolute;top:3px;bottom:3px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--f-mono);font-size:11px;font-weight:700}
+.covaxis{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.matrix{border-collapse:collapse}
+.matrix th,.matrix td{padding:6px 8px;border:1px solid var(--line);text-align:center;font-size:12.5px}
+.matrix th{background:var(--surface-2);font-weight:600}
+.matrix td label{display:grid;gap:2px;justify-items:center;cursor:pointer}
+.matrix td small{color:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.slider{display:grid;grid-template-columns:minmax(150px,1fr) 140px 28px;gap:10px;align-items:center}
+.slider output{font-family:var(--f-mono);text-align:right}
+@media (max-width:520px){.slider{grid-template-columns:1fr 1fr 24px}}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+@media (max-width:420px){.cols{grid-template-columns:1fr}}
+.req input{width:40px;padding:4px;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:80;font-weight:500;box-shadow:var(--shadow)}
+.kpis{display:flex;flex-wrap:wrap;gap:18px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.kpis div{display:grid}
+.kpis b{font-family:var(--f-mono);font-size:18px}
+.kpis span{font-size:11.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div id="app" lang="el"></div>
+<script id="engine-src">
+var Engine = (function () {
+  'use strict';
+  var HARD = 1000;
+
+  // ---------- date helpers ----------
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function ymd(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+  function daysIn(y, m) { return new Date(y, m, 0).getDate(); }
+  function dowOf(y, m, d) { return new Date(y, m - 1, d).getDay(); }
+  function mkey(y, m) { return y + '-' + pad(m); }
+  function prevYM(y, m) { return m === 1 ? [y - 1, 12] : [y, m - 1]; }
+  function nextYM(y, m) { return m === 12 ? [y + 1, 1] : [y, m + 1]; }
+  function parseYMD(s) { var a = s.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function fmt(dt) { return ymd(dt.getFullYear(), dt.getMonth() + 1, dt.getDate()); }
+  function addDays(s, n) { var dt = parseYMD(s); dt.setDate(dt.getDate() + n); return fmt(dt); }
+
+  function orthodoxEaster(y) {
+    var a = y % 4, b = y % 7, c = y % 19;
+    var d = (19 * c + 15) % 30, e = (2 * a + 4 * b - d + 34) % 7;
+    var month = Math.floor((d + e + 114) / 31), day = ((d + e + 114) % 31) + 1;
+    var dt = new Date(y, month - 1, day);
+    dt.setDate(dt.getDate() + 13);
+    return dt;
+  }
+  function greekHolidays(y) {
+    var h = {};
+    h[ymd(y, 1, 1)] = 'Πρωτοχρονιά';
+    h[ymd(y, 1, 6)] = 'Θεοφάνεια';
+    h[ymd(y, 3, 25)] = '25η Μαρτίου';
+    h[ymd(y, 5, 1)] = 'Πρωτομαγιά';
+    h[ymd(y, 8, 15)] = 'Κοίμηση Θεοτόκου';
+    h[ymd(y, 10, 28)] = '28η Οκτωβρίου';
+    h[ymd(y, 12, 25)] = 'Χριστούγεννα';
+    h[ymd(y, 12, 26)] = 'Σύναξη Θεοτόκου';
+    var e = fmt(orthodoxEaster(y));
+    h[addDays(e, -48)] = 'Καθαρά Δευτέρα';
+    h[addDays(e, -2)] = 'Μεγάλη Παρασκευή';
+    h[e] = 'Πάσχα';
+    h[addDays(e, 1)] = 'Δευτέρα του Πάσχα';
+    h[addDays(e, 50)] = 'Αγίου Πνεύματος';
+    return h;
+  }
+  function holidayMap(cfg, y) {
+    var h = greekHolidays(y);
+    (cfg.customHolidays || []).forEach(function (x) { if (x.date && x.date.slice(0, 4) == y) h[x.date] = x.name || 'Αργία'; });
+    return h;
+  }
+
+  function toMin(t) { var a = String(t || '0:0').split(':'); return (+a[0]) * 60 + (+a[1] || 0); }
+  function shiftGeom(s) {
+    var st = toMin(s.start), en = toMin(s.end);
+    if (en <= st) en += 1440;
+    return { start: st, end: en, hours: (en - st) / 60, night: en > 1440 || st >= 22 * 60 };
+  }
+  // rest hours between shift a on day d and shift b on day d+1
+  function restHours(a, b) { var ga = shiftGeom(a), gb = shiftGeom(b); return (gb.start + 1440 - ga.end) / 60; }
+
+  // ---------- leave lookup ----------
+  // returns per person per date: {kind: 1 hard no credit, 2 hard credited, 3 wish(soft), type}
+  function leaveIndex(cfg) {
+    var types = {};
+    (cfg.leaveTypes || []).forEach(function (t) { types[t.id] = t; });
+    var idx = {};
+    (cfg.leaves || []).forEach(function (l) {
+      var t = types[l.type] || { mode: 'credit' };
+      var kind = t.mode === 'wish' ? 3 : (t.mode === 'nocredit' ? 1 : 2);
+      if (!l.from) return;
+      var to = l.to || l.from, cur = l.from, guard = 0;
+      while (cur <= to && guard++ < 800) {
+        var k = l.staffId + '|' + cur;
+        if (!idx[k] || idx[k].kind === 3) idx[k] = { kind: kind, type: t.name || '', leaveId: l.id };
+        cur = addDays(cur, 1);
+      }
+    });
+    return idx;
+  }
+
+  // ---------- problem ----------
+  // months: function(key) -> {cells:{"d|shiftId":[staffId,...]}, locks:{"d|shiftId|k":true}} or null
+  function buildProblem(cfg, y, m, months, opts) {
+    opts = opts || {};
+    var D = daysIn(y, m);
+    var staff = cfg.staff || [];
+    var shifts = cfg.shifts || [];
+    var S = shifts.length, Pn = staff.length;
+    var R = cfg.rules || {};
+    var W = cfg.weights || {};
+    var hol = holidayMap(cfg, y);
+    var li = leaveIndex(cfg);
+    var sIdx = {}, pIdx = {};
+    shifts.forEach(function (s, i) { sIdx[s.id] = i; });
+    staff.forEach(function (p, i) { pIdx[p.id] = i; });
+
+    var P = { y: y, m: m, D: D, S: S, Pn: Pn, key: mkey(y, m) };
+    P.dow = []; P.weekend = []; P.holiday = []; P.holidayName = [];
+    for (var d = 1; d <= D; d++) {
+      var w = dowOf(y, m, d);
+      P.dow.push(w); P.weekend.push(w === 0 || w === 6 ? 1 : 0);
+      var hn = hol[ymd(y, m, d)] || '';
+      P.holiday.push(hn ? 1 : 0); P.holidayName.push(hn);
+    }
+    P.shifts = shifts.map(function (s) {
+      var g = shiftGeom(s);
+      return { id: s.id, code: s.code, name: s.name, hours: g.hours, night: s.night != null ? !!s.night : g.night };
+    });
+    P.hrs = P.shifts.map(function (s) { return s.hours; });
+    P.night = P.shifts.map(function (s) { return s.night ? 1 : 0; });
+    P.persons = staff.map(function (p) { return { id: p.id, code: p.code, name: p.name }; });
+    P.active = staff.map(function (p) { return p.active === false ? 0 : 1; });
+    P.allowed = staff.map(function (p) {
+      return shifts.map(function (s) { var v = (p.shifts || {})[s.id]; return v === 'no' ? 0 : v === 'avoid' ? 1 : 2; });
+    });
+    P.avail = staff.map(function (p) {
+      var out = [];
+      for (var w = 0; w < 7; w++) {
+        out.push(shifts.map(function (s) { var a = p.avail && p.avail[w]; return a && a[s.id] === false ? 0 : 1; }));
+      }
+      return out;
+    });
+    // leave matrix
+    P.leave = new Array(Pn * D).fill(0);
+    P.leaveName = new Array(Pn * D).fill('');
+    var credited = new Array(Pn).fill(0);
+    staff.forEach(function (p, pi) {
+      for (var d = 1; d <= D; d++) {
+        var e = li[p.id + '|' + ymd(y, m, d)];
+        if (e) { P.leave[pi * D + d - 1] = e.kind; P.leaveName[pi * D + d - 1] = e.type; if (e.kind === 2) credited[pi]++; }
+      }
+    });
+    // birthdays / name days in this month (soft wish for a day off)
+    P.special = new Array(Pn * D).fill(0);
+    P.specialName = new Array(Pn * D).fill('');
+    staff.forEach(function (p, pi) {
+      [['birthday', 'γενέθλια'], ['nameday', 'γιορτή']].forEach(function (kv) {
+        var v = p[kv[0]]; if (!v || v.length < 10) return;
+        if (+v.slice(5, 7) !== m) return;
+        var dd = Math.min(+v.slice(8, 10), D);
+        P.special[pi * D + dd - 1] = 1;
+        P.specialName[pi * D + dd - 1] = P.specialName[pi * D + dd - 1] ? 'γενέθλια και γιορτή' : kv[1];
+      });
+    });
+    P.target = staff.map(function (p, pi) { return Math.max(0, (+p.weeklyTarget || 0) / 7 * (D - credited[pi])); });
+    P.weeklyMax = staff.map(function (p) { return +p.weeklyMax || 999; });
+    // weeks (Mon-Sun)
+    var offset = (dowOf(y, m, 1) + 6) % 7;
+    P.weekOffset = offset;
+    P.week = []; for (var d2 = 0; d2 < D; d2++) P.week.push(Math.floor((d2 + offset) / 7));
+    P.nWeeks = P.week[D - 1] + 1;
+    // mandatory weekly minimum hours (per person, per week)
+    var gran = 8;
+    (function () {
+      var hs = shifts.filter(function (s) { return (s.required || []).some ? s.required.some(function (r) { return +r > 0; }) : +s.required > 0; })
+        .map(function (s) { return shiftGeom(s).hours; });
+      if (hs.length) gran = Math.min.apply(null, hs);
+    })();
+    P.gran = gran;
+    P.minWeek = staff.map(function (p, pi) {
+      var arr = new Array(P.nWeeks).fill(0);
+      if (!p.targetHard || p.active === false) return arr;
+      var t = +p.weeklyTarget || 0;
+      for (var k = 0; k < P.nWeeks; k++) {
+        var eff = 0; // only days of this month count; the previous month is already fixed
+        for (var dd = 0; dd < D; dd++) if (P.week[dd] === k && P.leave[pi * D + dd] !== 2) eff++;
+        var req = t * Math.min(7, eff) / 7;
+        arr[k] = Math.floor(req / gran + 1e-6) * gran;
+      }
+      return arr;
+    });
+    P.weekLabel = [];
+    for (var kk = 0; kk < P.nWeeks; kk++) {
+      var f = -1, l = -1;
+      for (var d5 = 0; d5 < D; d5++) if (P.week[d5] === kk) { if (f < 0) f = d5; l = d5; }
+      P.weekLabel.push({ first: f, text: (f + 1) + '–' + (l + 1) });
+    }
+    // forbidden transitions
+    P.forbid = [];
+    for (var a = 0; a < S; a++) {
+      var row = [];
+      for (var b = 0; b < S; b++) row.push((R.forbid || {})[shifts[a].id + '>' + shifts[b].id] ? 1 : 0);
+      P.forbid.push(row);
+    }
+    P.maxCN = +R.maxConsecNights || 99;
+    // per-person nights limits and clean weekends off
+    function optNum(v) { return v === '' || v == null || isNaN(+v) ? null : +v; }
+    P.maxN = staff.map(function (p) { return optNum(p.maxNights); });
+    P.minN = staff.map(function (p) { return optNum(p.minNights) || 0; });
+    P.wkOff = staff.map(function (p) { return Math.max(0, Math.floor(+p.weekendsOff || 0)); });
+    P.weekends = [];
+    for (var d6 = 0; d6 < D - 1; d6++) if (P.dow[d6] === 6) P.weekends.push({ fri: d6 - 1, sat: d6, sun: d6 + 1 });
+    P.maxCD = +R.maxConsecDays || 99;
+    // tail: last 14 days of previous month
+    var pym = prevYM(y, m), pD = daysIn(pym[0], pym[1]);
+    var pm = months(mkey(pym[0], pym[1]));
+    P.tail = staff.map(function () { return new Array(14).fill(-1); });
+    P.tailHours = staff.map(function () { return new Array(14).fill(0); });
+    if (pm && pm.cells) {
+      for (var t = 0; t < 14; t++) {
+        var day = pD - 13 + t;
+        if (day < 1) continue;
+        shifts.forEach(function (s, si) {
+          (pm.cells[day + '|' + s.id] || []).forEach(function (sid) {
+            var pi = pIdx[sid];
+            if (pi == null) return;
+            P.tail[pi][t] = si; P.tailHours[pi][t] += P.hrs[si];
+          });
+        });
+      }
+    }
+    P.tailWeekHours = staff.map(function (p, pi) {
+      var h = 0; for (var t = 14 - offset; t < 14; t++) h += P.tailHours[pi][t]; return h;
+    });
+    P.tailLast = P.tail.map(function (t) { return t[13]; });
+    P.tailRunDays = P.tail.map(function (t) { var r = 0; for (var i = 13; i >= 0 && t[i] >= 0; i--) r++; return r; });
+    P.tailRunN = P.tail.map(function (t) { var r = 0; for (var i = 13; i >= 0 && t[i] >= 0 && P.night[t[i]]; i--) r++; return r; });
+
+    // cells
+    var cur = months(P.key) || { cells: {}, locks: {} };
+    P.cells = []; P.locked = []; P.init = [];
+    P.cellsByDay = [];
+    for (var d3 = 1; d3 <= D; d3++) {
+      var list = [];
+      shifts.forEach(function (s, si) {
+        var req = s.required && s.required.length === 7 ? +s.required[P.dow[d3 - 1]] : (+s.required || 0);
+        var assigned = (cur.cells && cur.cells[d3 + '|' + s.id]) || [];
+        var n = Math.max(req, assigned.length);
+        for (var k = 0; k < n; k++) {
+          var ci = P.cells.length;
+          P.cells.push({ d: d3 - 1, s: si, k: k, req: k < req ? 1 : 0 });
+          var pid = assigned[k];
+          P.init.push(pid != null && pIdx[pid] != null ? pIdx[pid] : -1);
+          P.locked.push(cur.locks && cur.locks[d3 + '|' + s.id + '|' + k] ? 1 : 0);
+          list.push(ci);
+        }
+      });
+      P.cellsByDay.push(list);
+    }
+    var C = P.cells.length;
+    P.C = C;
+    // eligibility
+    P.eligible = [];
+    P.eligMask = new Array(C * Pn).fill(0);
+    for (var c = 0; c < C; c++) {
+      var cell = P.cells[c], el = [];
+      for (var pi = 0; pi < Pn; pi++) {
+        if (!P.active[pi]) continue;
+        if (P.allowed[pi][cell.s] === 0) continue;
+        if (!P.avail[pi][P.dow[cell.d]][cell.s]) continue;
+        var lv = P.leave[pi * D + cell.d];
+        if (lv === 1 || lv === 2) continue;
+        el.push(pi); P.eligMask[c * Pn + pi] = 1;
+      }
+      P.eligible.push(el);
+    }
+    // pairs
+    P.pairs = (cfg.pairs || []).map(function (r, idx) {
+      return { a: pIdx[r.a], b: pIdx[r.b], type: r.type, idx: idx };
+    }).filter(function (r) { return r.a != null && r.b != null && r.a !== r.b; });
+    // fairness weights (share of work)
+    var tgt = staff.map(function (p) { return Math.max(0.1, +p.weeklyTarget || 0); });
+    P.fwN = staff.map(function (p, pi) { return P.active[pi] && P.allowed[pi].some(function (v, si) { return v > 0 && P.night[si]; }) ? tgt[pi] : 0; });
+    P.fwAll = staff.map(function (p, pi) { return P.active[pi] ? tgt[pi] : 0; });
+    var hist = opts.history || null;
+    P.hist = {
+      n: staff.map(function (p) { return hist && hist[p.id] ? hist[p.id].nights || 0 : 0; }),
+      w: staff.map(function (p) { return hist && hist[p.id] ? hist[p.id].weekend || 0 : 0; }),
+      h: staff.map(function (p) { return hist && hist[p.id] ? hist[p.id].holiday || 0 : 0; })
+    };
+    P.w = {
+      hours: num(W.hours, 3), nights: num(W.nights, 4), weekend: num(W.weekend, 3), holiday: num(W.holiday, 3),
+      frag: num(W.frag, 2), rot: num(W.rot, 1), pref: num(W.pref, 6), wish: num(W.wish, 10), pair: num(W.pair, 8),
+      change: num(W.change, 30), special: num(W.special, 8) * 2.5
+    };
+    P.baseline = null;
+    return P;
+  }
+  function num(v, d) { return v == null || v === '' || isNaN(+v) ? d : +v; }
+
+  // ---------- state ----------
+  function State(P, asg) {
+    var D = P.D, Pn = P.Pn;
+    this.P = P;
+    this.asg = Int16Array.from(asg);
+    this.cnt = new Int8Array(Pn * D);
+    this.sh = new Int16Array(Pn * D).fill(-1);
+    this.hsum = new Float32Array(Pn * D);
+    this.pc = new Float64Array(Pn);
+    this.nN = new Float64Array(Pn); this.nW = new Float64Array(Pn); this.nH = new Float64Array(Pn); this.hours = new Float64Array(Pn);
+    this.dc = new Float64Array(D);
+    this.wh = new Float64Array(P.nWeeks);
+    for (var c = 0; c < P.C; c++) { var p = this.asg[c]; if (p >= 0) this.addRaw(p, P.cells[c]); }
+    this.empties = 0; this.changes = 0;
+    for (var c2 = 0; c2 < P.C; c2++) {
+      if (this.asg[c2] < 0 && P.cells[c2].req) this.empties++;
+      if (P.baseline && P.baseline[c2] !== this.asg[c2]) this.changes++;
+    }
+    for (var pi = 0; pi < Pn; pi++) this.pc[pi] = this.evalPerson(pi, null);
+    for (var d = 0; d < D; d++) this.dc[d] = this.evalDay(d, null);
+    this.fair = this.evalFair();
+  }
+  State.prototype.addRaw = function (p, cell) {
+    var i = p * this.P.D + cell.d;
+    this.cnt[i]++; this.sh[i] = cell.s; this.hsum[i] += this.P.hrs[cell.s];
+  };
+  State.prototype.resync = function (p, d) {
+    var P = this.P, i = p * P.D + d, list = P.cellsByDay[d];
+    this.cnt[i] = 0; this.sh[i] = -1; this.hsum[i] = 0;
+    for (var j = 0; j < list.length; j++) {
+      var c = list[j];
+      if (this.asg[c] === p) { this.cnt[i]++; this.sh[i] = P.cells[c].s; this.hsum[i] += P.hrs[P.cells[c].s]; }
+    }
+  };
+  State.prototype.total = function () {
+    var t = 0;
+    for (var i = 0; i < this.pc.length; i++) t += this.pc[i];
+    for (var d = 0; d < this.dc.length; d++) t += this.dc[d];
+    return t + this.fair + this.empties * HARD + this.changes * this.P.w.change;
+  };
+
+  // returns cost; if iss array given, pushes issues
+  State.prototype.evalPerson = function (p, iss) {
+    var P = this.P, D = P.D, base = p * D, w = P.w;
+    var hard = 0, soft = 0, hours = 0, nN = 0, nW = 0, nH = 0;
+    var code = P.persons[p].code;
+    function I(d, hardv, msg, kind) { if (iss) iss.push({ hard: hardv, p: p, d: d, msg: msg, kind: kind || '' }); }
+    for (var d = 0; d < D; d++) {
+      var c = this.cnt[base + d];
+      if (!c) continue;
+      var s = this.sh[base + d];
+      hours += this.hsum[base + d];
+      if (c > 1) { hard += c - 1; I(d, 1, code + ': δύο βάρδιες την ίδια μέρα', 'double'); }
+      if (!P.active[p]) { hard++; I(d, 1, code + ': ανενεργό άτομο', 'inactive'); }
+      var a = P.allowed[p][s];
+      if (a === 0) { hard++; I(d, 1, code + ': δεν κάνει βάρδια ' + P.shifts[s].name, 'notallowed'); }
+      else if (a === 1) { soft += w.pref; I(d, 0, code + ': προτιμά να μην κάνει ' + P.shifts[s].name, 'pref'); }
+      if (!P.avail[p][P.dow[d]][s]) { hard++; I(d, 1, code + ': μη διαθέσιμος/η αυτή τη μέρα/βάρδια', 'unavail'); }
+      var lv = P.leave[base + d];
+      if (lv === 1 || lv === 2) { hard++; I(d, 1, code + ': σε ' + (P.leaveName[base + d] || 'άδεια').toLowerCase(), 'leave'); }
+      else if (lv === 3) { soft += w.wish; I(d, 0, code + ': είχε ζητήσει να μη δουλέψει (' + (P.leaveName[base + d] || 'επιθυμία') + ')', 'wish'); }
+      if (P.night[s]) nN++;
+      if (P.weekend[d]) nW++;
+      if (P.holiday[d]) nH++;
+    }
+    // sequences
+    var prev = P.tailLast[p], runD = P.tailRunDays[p], runN = P.tailRunN[p];
+    for (var d2 = 0; d2 < D; d2++) {
+      var s2 = this.cnt[base + d2] ? this.sh[base + d2] : -1;
+      if (s2 >= 0) {
+        if (prev >= 0 && P.forbid[prev][s2]) {
+          hard++; I(d2, 1, code + ': ' + P.shifts[prev].name + ' → ' + P.shifts[s2].name + ' χωρίς επαρκή ανάπαυση', 'transition');
+        }
+        if (prev >= 0 && prev !== s2) soft += w.rot;
+        runD++;
+        if (runD > P.maxCD) { hard++; if (runD === P.maxCD + 1) I(d2, 1, code + ': πάνω από ' + P.maxCD + ' συνεχόμενες μέρες', 'consecDays'); }
+        if (P.night[s2]) { runN++; if (runN > P.maxCN) { hard++; if (runN === P.maxCN + 1) I(d2, 1, code + ': πάνω από ' + P.maxCN + ' συνεχόμενες νύχτες', 'consecNights'); } }
+        else runN = 0;
+      } else {
+        var pw = d2 === 0 ? P.tailLast[p] >= 0 : this.cnt[base + d2 - 1] > 0;
+        var nw = d2 < D - 1 && this.cnt[base + d2 + 1] > 0;
+        if (pw && nw && P.active[p]) { soft += w.frag; }
+        runD = 0; runN = 0;
+      }
+      prev = s2;
+    }
+    // weekly max
+    var wh = this.wh; wh.fill(0); wh[0] = P.tailWeekHours[p];
+    for (var d3 = 0; d3 < D; d3++) wh[P.week[d3]] += this.hsum[base + d3];
+    var mw = P.minWeek[p];
+    for (var k = 0; k < P.nWeeks; k++) {
+      var whm = k === 0 ? wh[k] - P.tailWeekHours[p] : wh[k];
+      if (mw[k] && whm < mw[k] - 1e-6) {
+        hard += Math.ceil((mw[k] - whm) / P.gran - 1e-6);
+        if (iss) I(P.weekLabel[k].first, 1, code + ': ' + whm + ' ώρες τις μέρες ' + P.weekLabel[k].text + ' (υποχρεωτικό ελάχιστο ' + mw[k] + ' για αυτές τις μέρες)', 'weekMin');
+      }
+      if (wh[k] > P.weeklyMax[p] + 1e-6) {
+        var ex = Math.ceil((wh[k] - P.weeklyMax[p]) / 8);
+        hard += ex;
+        if (iss) {
+          var fd = 0; for (var d4 = 0; d4 < D; d4++) if (P.week[d4] === k) { fd = d4; break; }
+          I(fd, 1, code + ': ' + wh[k] + ' ώρες την εβδομάδα (όριο ' + P.weeklyMax[p] + ')', 'weekMax');
+        }
+      }
+    }
+    // nights per month and clean weekends off
+    if (P.active[p]) {
+      if (P.maxN[p] != null && nN > P.maxN[p]) { hard += nN - P.maxN[p]; I(-1, 1, code + ': ' + nN + ' νύχτες τον μήνα (μέγιστο ' + P.maxN[p] + ')', 'nightsMax'); }
+      if (P.minN[p] && nN < P.minN[p]) { hard += P.minN[p] - nN; I(-1, 1, code + ': ' + nN + ' νύχτες τον μήνα (ελάχιστο ' + P.minN[p] + ')', 'nightsMin'); }
+      var kOff = P.wkOff[p];
+      if (kOff) {
+        var bl = [], clean = 0;
+        for (var wi = 0; wi < P.weekends.length; wi++) {
+          var wk = P.weekends[wi], b = 0;
+          if (wk.fri >= 0) { if (this.cnt[base + wk.fri] && P.night[this.sh[base + wk.fri]]) b++; }
+          else if (P.tailLast[p] >= 0 && P.night[P.tailLast[p]]) b++;
+          if (this.cnt[base + wk.sat]) b++;
+          if (this.cnt[base + wk.sun]) b++;
+          bl.push(b); if (!b) clean++;
+        }
+        bl.sort(function (a, b2) { return a - b2; });
+        var miss = 0;
+        for (var bi = 0; bi < Math.min(kOff, bl.length); bi++) miss += bl[bi];
+        if (kOff > bl.length) miss += (kOff - bl.length) * 3;
+        if (miss) { hard += miss; I(-1, 1, code + ': ' + clean + (clean === 1 ? ' ελεύθερο ΣΚ' : ' ελεύθερα ΣΚ') + ' (ζητούνται ' + kOff + '· ελεύθερο = Σάβ+Κυρ ρεπό και Παρασκευή όχι νύχτα)', 'weekendOff'); }
+      }
+    }
+    // monthly hours vs target
+    if (P.active[p]) {
+      var dev = (hours - P.target[p]) / 8;
+      soft += w.hours * dev * dev;
+      if (iss && Math.abs(hours - P.target[p]) >= 16) I(-1, 0, code + ': ' + hours + ' ώρες έναντι στόχου ' + Math.round(P.target[p]), 'hours');
+    }
+    this.nN[p] = nN; this.nW[p] = nW; this.nH[p] = nH; this.hours[p] = hours;
+    return hard * HARD + soft;
+  };
+  State.prototype.evalDay = function (d, iss) {
+    var P = this.P, D = P.D, cost = 0;
+    for (var i = 0; i < P.pairs.length; i++) {
+      var r = P.pairs[i];
+      var wa = this.cnt[r.a * D + d] > 0, wb = this.cnt[r.b * D + d] > 0;
+      var A = P.persons[r.a].code, B = P.persons[r.b].code;
+      if (r.type === 'avoid' && wa && wb) { cost += HARD; if (iss) iss.push({ hard: 1, p: r.a, d: d, msg: A + ' και ' + B + ' δεν πρέπει να δουλεύουν την ίδια μέρα', kind: 'pair', pair: r.idx }); }
+      else if (r.type === 'requires' && wa && !wb) { cost += HARD; if (iss) iss.push({ hard: 1, p: r.a, d: d, msg: A + ' δουλεύει μόνο όταν δουλεύει και ' + B, kind: 'pair', pair: r.idx }); }
+      else if (r.type === 'prefer' && wa !== wb) { cost += P.w.pair; }
+    }
+    return cost;
+  };
+  State.prototype.evalFair = function () {
+    var P = this.P, w = P.w;
+    return fairCat(this.nN, P.hist.n, P.fwN, w.nights) + fairCat(this.nW, P.hist.w, P.fwAll, w.weekend) + fairCat(this.nH, P.hist.h, P.fwAll, w.holiday);
+  };
+  function fairCat(cnt, hist, fw, wt) {
+    if (!wt) return 0;
+    var tot = 0, sw = 0, i;
+    for (i = 0; i < cnt.length; i++) if (fw[i] > 0) { tot += cnt[i] + hist[i]; sw += fw[i]; }
+    if (!sw) return 0;
+    var c = 0;
+    for (i = 0; i < cnt.length; i++) if (fw[i] > 0) { var e = tot * fw[i] / sw, df = cnt[i] + hist[i] - e; c += df * df; }
+    return wt * c;
+  }
+
+  // apply a list of [cell, person] changes, recompute affected; returns new total
+  State.prototype.apply = function (changes) {
+    var P = this.P, persons = [], days = [];
+    for (var i = 0; i < changes.length; i++) {
+      var c = changes[i][0], np = changes[i][1], op = this.asg[c], cell = P.cells[c];
+      if (op === np) continue;
+      if (cell.req) { if (op < 0) this.empties--; if (np < 0) this.empties++; }
+      if (P.baseline) {
+        if (P.baseline[c] === op) this.changes++;
+        if (P.baseline[c] === np) this.changes--;
+      }
+      this.asg[c] = np;
+      if (op >= 0) { this.resync(op, cell.d); if (persons.indexOf(op) < 0) persons.push(op); }
+      if (np >= 0) { this.resync(np, cell.d); if (persons.indexOf(np) < 0) persons.push(np); }
+      if (days.indexOf(cell.d) < 0) days.push(cell.d);
+    }
+    for (var j = 0; j < persons.length; j++) this.pc[persons[j]] = this.evalPerson(persons[j], null);
+    if (P.pairs.length) for (var k = 0; k < days.length; k++) this.dc[days[k]] = this.evalDay(days[k], null);
+    this.fair = this.evalFair();
+  };
+
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---------- solver ----------
+  // mode: 'fresh' clears unlocked cells; 'repair' keeps current as baseline
+  function solve(P, opts, onProgress) {
+    opts = opts || {};
+    var rand = rng(opts.seed || 1);
+    var C = P.C;
+    var init = P.init.slice();
+    if (opts.mode === 'repair') {
+      P.baseline = P.init.slice();
+    } else {
+      P.baseline = null;
+      for (var c = 0; c < C; c++) if (!P.locked[c]) init[c] = -1;
+    }
+    var st = new State(P, init);
+    var free = [];
+    for (var c1 = 0; c1 < C; c1++) if (!P.locked[c1] && P.eligible[c1].length) free.push(c1);
+    // greedy fill of empty cells
+    if (opts.mode !== 'repair') {
+      var order = free.slice();
+      for (var i = order.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)); var t = order[i]; order[i] = order[j]; order[j] = t; }
+      order.sort(function (a, b) { return P.cells[a].d - P.cells[b].d; });
+      for (var oi = 0; oi < order.length; oi++) {
+        var cc = order[oi], el = P.eligible[cc], best = -1, bestCost = Infinity;
+        for (var e = 0; e < el.length; e++) {
+          st.apply([[cc, el[e]]]);
+          var tc = st.total() + rand() * 2;
+          if (tc < bestCost) { bestCost = tc; best = el[e]; }
+        }
+        st.apply([[cc, best]]);
+      }
+    }
+    if (!free.length) return { asg: Array.from(st.asg), cost: st.total() };
+    var N = opts.iters || Math.max(60000, free.length * 2500);
+    var T0 = opts.mode === 'repair' ? 40 : 300, T1 = 0.3;
+    var cur = st.total(), best = cur, bestAsg = Array.from(st.asg);
+    var Pn = P.Pn;
+    // unlocked cells of each weekend (Friday night + Saturday + Sunday), for block moves
+    var wkCells = [];
+    var freeSet = {}; free.forEach(function (c) { freeSet[c] = 1; });
+    (P.weekends || []).forEach(function (w) {
+      var list = [];
+      [w.fri, w.sat, w.sun].forEach(function (d, j) {
+        if (d < 0) return;
+        P.cellsByDay[d].forEach(function (c) { if (freeSet[c] && (j > 0 || P.night[P.cells[c].s])) list.push(c); });
+      });
+      if (list.length) wkCells.push(list);
+    });
+    var PH = 4; // phase 0 = main search; phases 1..3 = reheats from the best, only while rules are still broken
+    for (var phase = 0; phase < PH; phase++) {
+    if (phase > 0) {
+      if (best < HARD * 0.999) break;
+      st = new State(P, bestAsg); cur = st.total();
+      T0 = 60;
+    }
+    for (var it = 0; it < N; it++) {
+      if (onProgress && (it & 4095) === 0) onProgress(phase === 0 ? 0.85 * it / N : 0.85 + 0.05 * (phase - 1 + it / N), best);
+      var T = T0 * Math.pow(T1 / T0, it / N);
+      var ch, rr = rand();
+      if (wkCells.length && rr < 0.12) {
+        // swap a whole weekend block (Fri night + Sat + Sun) between two people
+        var wc = wkCells[Math.floor(rand() * wkCells.length)];
+        var pa2 = Math.floor(rand() * Pn), pb2 = Math.floor(rand() * Pn);
+        if (pa2 === pb2) continue;
+        ch = []; var okSw = true;
+        for (var q = 0; q < wc.length; q++) {
+          var cq = wc[q], who = st.asg[cq];
+          if (who === pa2) { if (!P.eligMask[cq * Pn + pb2]) { okSw = false; break; } ch.push([cq, pb2]); }
+          else if (who === pb2) { if (!P.eligMask[cq * Pn + pa2]) { okSw = false; break; } ch.push([cq, pa2]); }
+        }
+        if (!okSw || !ch.length) continue;
+      } else if (rr < 0.6) {
+        var c2 = free[Math.floor(rand() * free.length)], el2 = P.eligible[c2];
+        var np = el2[Math.floor(rand() * el2.length)];
+        if (np === st.asg[c2]) continue;
+        ch = [[c2, np]];
+      } else {
+        var a = free[Math.floor(rand() * free.length)], b = free[Math.floor(rand() * free.length)];
+        var pa = st.asg[a], pb = st.asg[b];
+        if (a === b || pa === pb) continue;
+        if (pb >= 0 && !P.eligMask[a * Pn + pb]) continue;
+        if (pa >= 0 && !P.eligMask[b * Pn + pa]) continue;
+        ch = [[a, pb], [b, pa]];
+      }
+      var undo = ch.map(function (x) { return [x[0], st.asg[x[0]]]; });
+      st.apply(ch);
+      var nc = st.total(), dlt = nc - cur;
+      if (dlt <= 0 || rand() < Math.exp(-dlt / T)) {
+        cur = nc;
+        if (cur < best - 1e-9) { best = cur; bestAsg = Array.from(st.asg); }
+      } else {
+        st.apply(undo);
+      }
+    }
+    }
+    return { asg: bestAsg, cost: best };
+  }
+
+  // ---------- analysis ----------
+  function analyze(P, asg) {
+    var st = new State(P, asg), iss = [];
+    for (var p = 0; p < P.Pn; p++) st.evalPerson(p, iss);
+    for (var d = 0; d < P.D; d++) st.evalDay(d, iss);
+    for (var c = 0; c < P.C; c++) {
+      if (st.asg[c] < 0 && P.cells[c].req) {
+        var cell = P.cells[c];
+        iss.push({ hard: 1, p: -1, d: cell.d, s: cell.s, c: c, msg: 'Ακάλυπτη βάρδια: ' + P.shifts[cell.s].name + (P.eligible[c].length ? '' : ' (κανείς διαθέσιμος)'), kind: 'uncovered' });
+      }
+    }
+    var hard = 0; iss.forEach(function (x) { if (x.hard) hard++; });
+    var per = [];
+    for (var q = 0; q < P.Pn; q++) per.push({ hours: st.hours[q], target: P.target[q], nights: st.nN[q], weekend: st.nW[q], holiday: st.nH[q] });
+    return { issues: iss, hard: hard, cost: st.total(), per: per, fair: st.evalFair() };
+  }
+
+  // candidate replacements for cell c
+  function candidates(P, asg, c) {
+    var base = analyze(P, asg);
+    var baseKeys = {};
+    base.issues.forEach(function (x) { baseKeys[x.msg + '|' + x.d] = 1; });
+    var out = [];
+    for (var p = 0; p < P.Pn; p++) {
+      if (!P.active[p]) continue;
+      var a2 = Array.from(asg); a2[c] = p;
+      var r = analyze(P, a2);
+      var fresh = r.issues.filter(function (x) { return !baseKeys[x.msg + '|' + x.d] && x.d !== -1; });
+      out.push({ p: p, hardDelta: r.hard - base.hard, costDelta: r.cost - base.cost, issues: fresh, current: asg[c] === p });
+    }
+    out.sort(function (a, b) { return (a.current ? -1 : 0) - (b.current ? -1 : 0) || a.hardDelta - b.hardDelta || a.costDelta - b.costDelta; });
+    return out;
+  }
+
+
+
+  // repair first (fewest changes); if rules are still broken, also try a fresh build and keep the one with fewer violations
+  function solveBest(P, opts, onProgress) {
+    var P1 = JSON.parse(JSON.stringify(P));
+    var r1 = solve(P1, { mode: 'repair', seed: opts.seed, iters: opts.iters }, onProgress ? function (f) { onProgress(f * 0.5); } : null);
+    var h1 = analyze(JSON.parse(JSON.stringify(P)), r1.asg).hard;
+    if (!h1) return r1;
+    var r2 = solve(JSON.parse(JSON.stringify(P)), { mode: 'fresh', seed: opts.seed + 1 }, onProgress ? function (f) { onProgress(0.5 + f * 0.5); } : null);
+    var h2 = analyze(JSON.parse(JSON.stringify(P)), r2.asg).hard;
+    return h2 < h1 ? r2 : r1;
+  }
+
+  // ---------- suggestions ----------
+  // Exhaustive search over every single reassignment and every swap of two cells.
+  // need(asg) optional: the change must make this true (e.g. "person p off on day d").
+  function quickFixes(P, asg, opt) {
+    opt = opt || {};
+    var need = opt.need || null, Pn = P.Pn, C = P.C;
+    var st = new State(P, asg), base = st.total(), found = [];
+    function tryCh(ch) {
+      var undo = ch.map(function (x) { return [x[0], st.asg[x[0]]]; });
+      st.apply(ch);
+      var t = st.total(), ok = !need || need(st.asg);
+      st.apply(undo);
+      if (ok) found.push({ ch: ch, delta: t - base });
+    }
+    var free = [];
+    for (var c = 0; c < C; c++) if (!P.locked[c]) free.push(c);
+    free.forEach(function (c) {
+      P.eligible[c].forEach(function (p) { if (p !== st.asg[c]) tryCh([[c, p]]); });
+    });
+    for (var i = 0; i < free.length; i++) for (var j = i + 1; j < free.length; j++) {
+      var a = free[i], b = free[j], pa = st.asg[a], pb = st.asg[b];
+      if (pa === pb) continue;
+      if (pb >= 0 && !P.eligMask[a * Pn + pb]) continue;
+      if (pa >= 0 && !P.eligMask[b * Pn + pa]) continue;
+      tryCh([[a, pb], [b, pa]]);
+    }
+    found = found.filter(function (f) { return need ? f.delta < HARD * 0.5 : f.delta < -HARD * 0.5; });
+    found.sort(function (x, y) { return x.delta - y.delta || x.ch.length - y.ch.length; });
+    var before = analyze(P, asg), keyB = {};
+    before.issues.forEach(function (x) { keyB[x.msg + '|' + x.d] = x; });
+    var out = [], seen = {};
+    for (var k = 0; k < found.length && out.length < (opt.limit || 3); k++) {
+      var a2 = Array.from(asg);
+      found[k].ch.forEach(function (x) { a2[x[0]] = x[1]; });
+      var sig = a2.join(','); if (seen[sig]) continue; seen[sig] = 1;
+      var after = analyze(P, a2), keyA = {};
+      after.issues.forEach(function (x) { keyA[x.msg + '|' + x.d] = 1; });
+      out.push({
+        ch: found[k].ch.map(function (x) { return { c: x[0], from: asg[x[0]], to: x[1] }; }),
+        asg: a2, hardBefore: before.hard, hardAfter: after.hard, delta: found[k].delta,
+        fixed: before.issues.filter(function (x) { return !keyA[x.msg + '|' + x.d]; }).map(function (x) { return x.msg; }),
+        added: after.issues.filter(function (x) { return !keyB[x.msg + '|' + x.d]; }).map(function (x) { return x.hard ? '!' + x.msg : x.msg; })
+      });
+    }
+    return out;
+  }
+
+  return {
+    HARD: HARD, quickFixes: quickFixes, solveBest: solveBest, pad: pad, ymd: ymd, daysIn: daysIn, dowOf: dowOf, mkey: mkey, prevYM: prevYM, nextYM: nextYM,
+    addDays: addDays, parseYMD: parseYMD, fmt: fmt, greekHolidays: greekHolidays, holidayMap: holidayMap,
+    shiftGeom: shiftGeom, restHours: restHours, leaveIndex: leaveIndex, buildProblem: buildProblem,
+    solve: solve, analyze: analyze, candidates: candidates
+  };
+})();
+if (typeof self !== 'undefined' && typeof window === 'undefined' && typeof module === 'undefined') {
+  self.onmessage = function (ev) {
+    var msg = ev.data, results = [];
+    if (msg.jobs) {
+      msg.jobs.forEach(function (job, i) {
+        var prog = function (f) { self.postMessage({ type: 'progress', frac: (i + f) / msg.jobs.length }); };
+        results.push(job.mode === 'repair+' ? Engine.solveBest(job.P, { seed: job.seed, iters: job.iters }, prog)
+          : Engine.solve(job.P, { mode: job.mode, seed: job.seed, iters: job.iters }, prog));
+      });
+      self.postMessage({ type: 'done', results: results });
+      return;
+    }
+    var n = msg.seeds.length;
+    msg.seeds.forEach(function (seed, i) {
+      var P = JSON.parse(JSON.stringify(msg.P));
+      var r = Engine.solve(P, { mode: msg.mode, seed: seed, iters: msg.iters }, function (f) {
+        self.postMessage({ type: 'progress', frac: (i + f) / n });
+      });
+      results.push(r);
+    });
+    self.postMessage({ type: 'done', results: results });
+  };
+}
+if (typeof module !== 'undefined') module.exports = Engine;
+</script>
+<script>
+function makeSample() {
+  var allShifts = { M: 'yes', A: 'yes', N: 'yes' };
+  function person(id, code, name, color, t, mx) {
+    return { id: id, code: code, name: name, color: color, active: true, weeklyTarget: t, weeklyMax: mx,
+      shifts: JSON.parse(JSON.stringify(allShifts)), avail: {}, leaveEntitlement: 20, leaveCarry: 0 };
+  }
+  var cfg = {
+    version: 1,
+    shifts: [
+      { id: 'M', code: 'Π', name: 'Πρωί', start: '07:00', end: '15:00', required: [1, 1, 1, 1, 1, 1, 1], color: '#C7C7C7' },
+      { id: 'A', code: 'Α', name: 'Απόγευμα', start: '15:00', end: '23:00', required: [1, 1, 1, 1, 1, 1, 1], color: '#787878' },
+      { id: 'N', code: 'Ν', name: 'Νύχτα', start: '23:00', end: '07:00', required: [1, 1, 1, 1, 1, 1, 1], color: '#303030' }
+    ],
+    staff: [
+      person('s1', 'ΒΑ', '', '#4472C4', 40, 48),
+      person('s2', 'ΧΑ', '', '#E3A21A', 40, 48),
+      person('s3', 'ΘΣ', '', '#7F8791', 40, 48),
+      person('s4', 'ΕΙ', '', '#5AA13C', 40, 48),
+      person('s5', 'ΚΡ', '', '#C8312B', 16, 24),
+      person('s6', 'ΜΓ', '', '#7A3FA0', 8, 16)
+    ],
+    rules: { maxConsecNights: 3, maxConsecDays: 6, forbid: { 'N>M': true, 'N>A': true, 'A>M': true } },
+    weights: { hours: 3, nights: 4, weekend: 3, holiday: 3, frag: 2, rot: 1, pref: 6, wish: 10, pair: 8, change: 30, useHistory: true },
+    pairs: [],
+    leaveTypes: [
+      { id: 'annual', code: 'ΑΔ', name: 'Κανονική άδεια', mode: 'credit', deduct: true, color: '#C8312B' },
+      { id: 'sick', code: 'ΑΝ', name: 'Αναρρωτική', mode: 'credit', deduct: false, color: '#9B4DCA' },
+      { id: 'dayoff', code: 'ΡΠ', name: 'Αίτημα ρεπό', mode: 'nocredit', deduct: false, color: '#6B7785' },
+      { id: 'wish', code: 'ΕΠ', name: 'Επιθυμία (αν γίνεται)', mode: 'wish', deduct: false, color: '#B8A04A' }
+    ],
+    leaves: [
+      { id: 'l1', staffId: 's1', type: 'annual', from: '2026-10-02', to: '2026-10-02', note: '' },
+      { id: 'l2', staffId: 's3', type: 'annual', from: '2026-10-14', to: '2026-10-14', note: '' },
+      { id: 'l3', staffId: 's2', type: 'annual', from: '2026-10-14', to: '2026-10-18', note: '' },
+      { id: 'l4', staffId: 's3', type: 'annual', from: '2026-10-28', to: '2026-10-28', note: '' }
+    ],
+    customHolidays: [],
+    leaveCount: 'mon-fri'
+  };
+  var code2id = {}; cfg.staff.forEach(function (s) { code2id[s.code] = s.id; });
+  function month(rows, startDay) {
+    var cells = {};
+    rows.forEach(function (r, i) {
+      var d = startDay + i, parts = r.split(' ');
+      ['M', 'A', 'N'].forEach(function (sid, k) { cells[d + '|' + sid] = [code2id[parts[k]]]; });
+    });
+    return { cells: cells, locks: {} };
+  }
+  var months = {};
+  months['2026-09'] = month(['ΒΑ ΧΑ ΘΣ', 'ΒΑ ΧΑ ΕΙ', 'ΒΑ ΧΑ ΘΣ', 'ΒΑ ΧΑ ΘΣ'], 27);
+  months['2026-10'] = month([
+    'ΕΙ ΧΑ ΘΣ', 'ΕΙ ΧΑ ΜΓ', 'ΚΡ ΘΣ ΕΙ', 'ΒΑ ΘΣ ΕΙ', 'ΒΑ ΘΣ ΧΑ', 'ΒΑ ΘΣ ΕΙ', 'ΒΑ ΘΣ ΧΑ', 'ΕΙ ΘΣ ΧΑ', 'ΒΑ ΘΣ ΕΙ', 'ΚΡ ΧΑ ΕΙ',
+    'ΒΑ ΧΑ ΕΙ', 'ΒΑ ΘΣ ΧΑ', 'ΒΑ ΕΙ ΧΑ', 'ΒΑ ΚΡ ΕΙ', 'ΒΑ ΚΡ ΕΙ', 'ΒΑ ΘΣ ΕΙ', 'ΚΡ ΜΓ ΘΣ', 'ΕΙ ΜΓ ΘΣ', 'ΒΑ ΕΙ ΘΣ', 'ΒΑ ΕΙ ΧΑ',
+    'ΒΑ ΕΙ ΧΑ', 'ΘΣ ΕΙ ΧΑ', 'ΒΑ ΕΙ ΘΣ', 'ΜΓ ΧΑ ΘΣ', 'ΒΑ ΧΑ ΘΣ', 'ΒΑ ΧΑ ΕΙ', 'ΒΑ ΧΑ ΘΣ', 'ΚΡ ΧΑ ΒΑ', 'ΕΙ ΧΑ ΘΣ', 'ΒΑ ΧΑ ΕΙ', 'ΚΡ ΘΣ ΕΙ'
+  ], 1);
+  return { cfg: cfg, months: months };
+}
+if (typeof module !== 'undefined') module.exports = makeSample;
+</script>
+<script>
+(function () {
+  'use strict';
+  var E = Engine;
+  var WD = ['Κυρ', 'Δευ', 'Τρί', 'Τετ', 'Πέμ', 'Παρ', 'Σάβ'];
+  var WD_LONG = ['Κυριακή', 'Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
+  var MONTHS = ['Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος', 'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'];
+  var MONTHS_G = ['Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'];
+  var WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  var LS_KEY = 'vardiologio.v1';
+  var DEFAULT_GROUPS = [
+    { id: 'ceo', name: 'CEO', color: '#E5484D' },
+    { id: 'supervisor', name: 'Supervisor', color: '#5B7CFA' },
+    { id: 'operator', name: 'Operator', color: '#1DCF8E' }
+  ];
+
+  var today = new Date();
+  var store, db = null, downloads = null;
+  var ui = { tab: 'schedule', view: 'shift', sel: null, gen: null, confirm: null, statsPeriod: 'month', leaveYear: null, toast: null, saveMsg: 'Τοπική αποθήκευση' };
+  (function () {
+    var y = today.getFullYear(), m = today.getMonth() + 1;
+    if (today.getDate() >= 20) { var n = E.nextYM(y, m); y = n[0]; m = n[1]; }
+    ui.y = y; ui.m = m; ui.leaveYear = y;
+  })();
+  var undoStack = [];
+
+  // ---------- utils ----------
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function uid(p) { return (p || 'id') + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function inkOn(hex) {
+    var h = String(hex || '#888').replace('#', ''); if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(h.substr(0, 2), 16) / 255, g = parseInt(h.substr(2, 2), 16) / 255, b = parseInt(h.substr(4, 2), 16) / 255;
+    function f(c) { return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    var L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    return L > 0.36 ? '#15191E' : '#FFFFFF';
+  }
+  function groupOf(st) { return st && st.groupId ? (store.cfg.groups || []).find(function (g) { return g.id === st.groupId; }) || null : null; }
+  function staffById(id) { return store.cfg.staff.find(function (s) { return s.id === id; }); }
+  function shiftById(id) { return store.cfg.shifts.find(function (s) { return s.id === id; }); }
+  function chip(st) { if (!st) return ''; return '<span class="chip" style="background:' + esc(st.color) + ';color:' + inkOn(st.color) + '">' + esc(st.code) + '</span>'; }
+  function toast(msg, ms) {
+    ui.toast = msg; renderToast();
+    clearTimeout(toast.t); toast.t = setTimeout(function () { ui.toast = null; renderToast(); }, ms || 3200);
+  }
+  function hm(s) { return esc(s.start) + '–' + esc(s.end); }
+  function reqFor(s, dow) { return s.required && s.required.length === 7 ? (+s.required[dow] || 0) : (+s.required || 0); }
+  function monthDoc(k) { return store.months[k] || null; }
+  function ensureMonth(k) { if (!store.months[k]) store.months[k] = { cells: {}, locks: {} }; if (!store.months[k].locks) store.months[k].locks = {}; return store.months[k]; }
+  function curKey() { return E.mkey(ui.y, ui.m); }
+  function dateLabel(d) { return WD_LONG[E.dowOf(ui.y, ui.m, d)] + ' ' + d + ' ' + MONTHS_G[ui.m - 1]; }
+
+  // ---------- persistence ----------
+  function loadLocal() { try { var s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch (e) { } return null; }
+  function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) { } }
+  // ---- remote mode (GitHub Pages + Apps Script + Google Sheet)
+  var REMOTE = !!window.VARDIOLOGIO_REMOTE;
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
+  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
+  // All calls are GET (?a=...). Google blocks cross-site POST to some Apps Script deployments; GET always gets through.
+  // Transport: fetch without cookies; if the browser blocks that, fall back to JSONP (<script>).
+  function qs(p) { return Object.keys(p).filter(function (k) { return p[k] != null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&'); }
+  function jsonp(p) {
+    return new Promise(function (res, rej) {
+      var cb = '__vcb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), s = document.createElement('script'), done = false;
+      function end() { done = true; try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); clearTimeout(t); }
+      window[cb] = function (d) { if (!done) { end(); res(d); } };
+      s.onerror = function () { if (!done) { end(); rej(new Error('Δεν απάντησε ο server')); } };
+      var t = setTimeout(function () { if (!done) { end(); rej(new Error('Λήξη χρόνου')); } }, 45000);
+      s.src = R.api + (R.api.indexOf('?') < 0 ? '?' : '&') + qs(p) + '&cb=' + cb;
+      document.head.appendChild(s);
+    });
+  }
+  function getJSON(p) {
+    var url = R.api + (R.api.indexOf('?') < 0 ? '?' : '&') + qs(p);
+    if (R.transport === 'jsonp') return jsonp(p);
+    return fetch(url, { method: 'GET', credentials: 'omit', redirect: 'follow', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) { R.transport = 'fetch'; return d; })
+      .catch(function () { return jsonp(p).then(function (d) { R.transport = 'jsonp'; return d; }); });
+  }
+  function b64url(u8) {
+    var s = '';
+    for (var i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_');
+  }
+  function packStore(obj) {
+    var text = JSON.stringify(obj), raw = new TextEncoder().encode(text);
+    if (typeof CompressionStream === 'undefined') return Promise.resolve({ z: '0', d: b64url(raw) });
+    return new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
+      .then(function (buf) { return { z: '1', d: b64url(new Uint8Array(buf)) }; })
+      .catch(function () { return { z: '0', d: b64url(raw) }; });
+  }
+  function apiCall(body) {
+    if (body.action === 'login') return getJSON({ a: 'login', pw: body.password });
+    if (body.action === 'logout') return getJSON({ a: 'logout', t: body.token });
+    if (body.action === 'load') return getJSON({ a: 'load', t: body.token });
+    if (body.action === 'save') {
+      return packStore(body.store).then(function (pk) {
+        var CH = 6000, parts = [], id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+        for (var i = 0; i < pk.d.length; i += CH) parts.push(pk.d.slice(i, i + CH));
+        var idx = 0, failed = null;
+        function worker() {
+          if (failed || idx >= parts.length) return Promise.resolve();
+          var i = idx++;
+          return getJSON({ a: 'up', t: body.token, id: id, i: i, d: parts[i] }).then(function (r) {
+            if (r && r.error) { failed = r; return; }
+            return worker();
+          });
+        }
+        var pool = []; for (var k = 0; k < Math.min(4, parts.length); k++) pool.push(worker());
+        return Promise.all(pool).then(function () {
+          if (failed) return failed;
+          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '' });
+        });
+      });
+    }
+    return Promise.reject(new Error('bad action'));
+  }
+  function remoteSave() {
+    if (!R.ready) return;
+    if (R.pending) { R.again = true; return; }
+    R.pending = true; setSave('Αποθήκευση στο Google Sheet…');
+    lsSet('vardiologio.unsaved', '1');
+    apiCall({ action: 'save', token: R.token, store: store, baseHash: R.hash }).then(function (res) {
+      R.pending = false;
+      if (res.error === 'auth') { R.ready = false; showLogin('Η σύνδεση έληξε. Συνδέσου ξανά· οι αλλαγές σου κρατήθηκαν.'); return; }
+      if (res.error) throw new Error(res.message || res.error);
+      if (res.conflict) {
+        R.hash = res.hash; store = migrate(res.store); saveLocal(); lsSet('vardiologio.unsaved', null); render();
+        toast('Το Google Sheet είχε αλλάξει από αλλού (π.χ. AppSheet ή με το χέρι). Φορτώθηκαν τα νέα δεδομένα· η τελευταία σου αλλαγή δεν αποθηκεύτηκε, κάν’ την ξανά.', 9000);
+        setSave('Φορτώθηκαν νέα δεδομένα από το Sheet'); return;
+      }
+      R.hash = res.hash;
+      if (R.again) { R.again = false; remoteSave(); } else { lsSet('vardiologio.unsaved', null); setSave('Αποθηκεύτηκε στο Google Sheet'); }
+    }).catch(function (e) {
+      R.pending = false;
+      setSave('Δεν αποθηκεύτηκε (χωρίς σύνδεση;). Κρατήθηκε εδώ και θα ξαναδοκιμάσει στην επόμενη αλλαγή.');
+    });
+  }
+  function showLogin(msg) { ui.login = { msg: msg || '', busy: false }; render(); }
+  function remoteLoad() {
+    ui.loading = true; render();
+    return apiCall({ action: 'load', token: R.token }).then(function (res) {
+      ui.loading = false;
+      if (res.error === 'auth') { showLogin(); return; }
+      if (res.error) throw new Error(res.message || res.error);
+      R.hash = res.hash; R.sheetUrl = res.sheetUrl || '';
+      var local = loadLocal();
+      if (res.empty) {
+        R.ready = true; ui.onboard = true; render(); return;
+      }
+      if (lsGet('vardiologio.unsaved') && local) {
+        store = migrate(local); R.ready = true; render(); remoteSave();
+        toast('Ανέβηκαν αλλαγές που είχαν μείνει εκκρεμείς σε αυτή τη συσκευή.'); return;
+      }
+      store = migrate(res.store); saveLocal(); R.ready = true; render(); setSave('Συνδέθηκε με Google Sheet');
+    }).catch(function (e) {
+      ui.loading = false;
+      showLogin('Δεν ήταν δυνατή η σύνδεση με τον server: ' + (e && e.message || e) + '. Έλεγξε τη διεύθυνση και τη σύνδεσή σου στο internet.');
+    });
+  }
+  function doLogin() {
+    var api = (document.getElementById('lg_api') || {}).value, pw = (document.getElementById('lg_pw') || {}).value;
+    api = String(api || R.api || '').trim();
+    if (!/^https:\/\/script\.google\.com\//.test(api)) { ui.login.msg = 'Η διεύθυνση πρέπει να ξεκινά με https://script.google.com/…'; render(); return; }
+    R.api = api; ui.login.busy = true; ui.login.msg = ''; render();
+    apiCall({ action: 'login', password: pw || '' }).then(function (res) {
+      if (res.token) {
+        R.token = res.token; lsSet('vardiologio.token', res.token); if (!window.VARDIOLOGIO_API) lsSet('vardiologio.api', api);
+        ui.login = null; remoteLoad(); return;
+      }
+      var m = { wrong_password: 'Λάθος κωδικός.', locked: 'Πολλές λάθος προσπάθειες. Δοκίμασε ξανά σε 15 λεπτά.', no_password: 'Δεν έχει οριστεί κωδικός. Άνοιξε το Google Sheet → μενού «Βαρδιολόγιο» → «Ορισμός κωδικού σύνδεσης».' };
+      ui.login.busy = false; ui.login.msg = m[res.error] || ('Σφάλμα: ' + (res.message || res.error)); render();
+    }).catch(function (e) { ui.login.busy = false; ui.login.msg = 'Δεν απάντησε ο server: ' + (e && e.message || e); render(); });
+  }
+  function doLogout() {
+    var t = R.token; R.token = ''; R.ready = false; lsSet('vardiologio.token', null);
+    if (t) apiCall({ action: 'logout', token: t }).catch(function () { });
+    showLogin('Αποσυνδέθηκες.');
+  }
+  function viewLogin() {
+    var L = ui.login;
+    return '<div class="loginwrap"><form class="card login" id="loginform" autocomplete="on"><div class="bd" style="display:grid;gap:14px">' +
+      '<h1 style="font-size:22px">Βαρδιολόγιο</h1><p class="help" style="margin:0">Σύνδεση για πρόσβαση στο πρόγραμμα. Τα δεδομένα αποθηκεύονται στο Google Sheet σου.</p>' +
+      (window.VARDIOLOGIO_API ? '' : '<label class="f">Διεύθυνση server (Apps Script)<input type="url" id="lg_api" value="' + esc(R.api) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="url"></label>') +
+      '<label class="f">Κωδικός<input type="password" id="lg_pw" autocomplete="current-password" autofocus></label>' +
+      (L.msg ? '<div class="help" style="color:var(--danger)">' + esc(L.msg) + '</div>' : '') +
+      '<button class="btn primary" type="submit"' + (L.busy ? ' disabled' : '') + '>' + (L.busy ? 'Σύνδεση…' : 'Σύνδεση') + '</button>' +
+      '</div></form></div>';
+  }
+  function viewOnboard() {
+    return '<div class="modal" role="dialog" aria-modal="true"><div class="box" style="width:min(520px,100%)"><div class="hd"><h2>Το Google Sheet είναι άδειο</h2></div><div class="bd">' +
+      '<p style="margin:0">Συνδέθηκες σωστά. Για να φέρεις τα δεδομένα που είχες στο τοπικό Βαρδιολόγιο, διάλεξε το αντίγραφο ασφαλείας (JSON) που είχες κατεβάσει από τις Ρυθμίσεις.</p>' +
+      '<div class="row"><label class="btn primary" for="importfile2">Φόρτωση αντιγράφου (JSON)</label><input type="file" id="importfile2" accept=".json,application/json" hidden>' +
+      '<button class="btn" data-act="onboardsample">Ξεκίνα με το παράδειγμα</button></div></div></div></div>';
+  }
+  var dirtyCfg = false, dirtyMonths = {}, saveTimer = null;
+  function markCfg() { dirtyCfg = true; queueSave(); }
+  function markMonth(k) { dirtyMonths[k] = 1; queueSave(); }
+  function queueSave() { saveLocal(); if (REMOTE) lsSet('vardiologio.unsaved', '1'); clearTimeout(saveTimer); setSave('Αποθήκευση…'); saveTimer = setTimeout(flush, REMOTE ? 1500 : 700); }
+  function setSave(t) { ui.saveMsg = t; var el = document.getElementById('savemsg'); if (el) el.textContent = t; }
+  function flush() {
+    saveLocal();
+    if (REMOTE) { remoteSave(); return; }
+    if (!db) { setSave('Αποθηκεύτηκε σε αυτόν τον browser'); return; }
+    var jobs = [];
+    if (dirtyCfg) { dirtyCfg = false; jobs.push(db.doc('app/config').set({ json: JSON.stringify(store.cfg), savedAt: new Date().toISOString() })); }
+    Object.keys(dirtyMonths).forEach(function (k) {
+      delete dirtyMonths[k];
+      jobs.push(db.doc('months/' + k).set({ key: k, json: JSON.stringify(store.months[k] || { cells: {}, locks: {} }) }));
+    });
+    Promise.all(jobs).then(function () { setSave('Αποθηκεύτηκε'); }, function (e) {
+      setSave('Δεν αποθηκεύτηκε στο cloud (' + ((e && e.code) || 'σφάλμα') + '), κρατήθηκε τοπικά');
+    });
+  }
+  function migrate(s) {
+    var base = makeSample().cfg;
+    s.cfg = s.cfg || {};
+    ['shifts', 'staff', 'pairs', 'leaves', 'customHolidays', 'leaveTypes'].forEach(function (k) { if (!Array.isArray(s.cfg[k])) s.cfg[k] = clone(base[k]); });
+    s.cfg.rules = Object.assign({}, base.rules, s.cfg.rules || {});
+    s.cfg.weights = Object.assign({}, base.weights, s.cfg.weights || {});
+    s.cfg.leaveCount = s.cfg.leaveCount || 'mon-fri';
+    if (!Array.isArray(s.cfg.groups)) {
+      s.cfg.groups = clone(DEFAULT_GROUPS);
+      s.cfg.staff.forEach(function (p) { if (!p.groupId) p.groupId = 'operator'; });
+    }
+    s.months = s.months || {};
+    return s;
+  }
+  store = migrate(loadLocal() || makeSample());
+  if (window.VARDIOLOGIO_REMOTE) ui.saveMsg = 'Σύνδεση…';
+
+  function connect() {
+    if (REMOTE) { if (!R.token || !R.api) showLogin(); else remoteLoad(); return; }
+    var c = window.claude;
+    if (!c || !c.use) return;
+    c.use('downloads').then(function (d) { downloads = d; }, function () { });
+    c.use('db').then(function (d) {
+      if (!d) { setSave('Αποθήκευση μόνο σε αυτόν τον browser'); return; }
+      db = d;
+      return db.doc('app/config').get().then(function (snap) {
+        if (snap.exists) {
+          var cfg = JSON.parse(snap.data().json);
+          return db.collection('months').limit(1000).get().then(function (q) {
+            var months = {};
+            q.docs.forEach(function (ds) { var x = ds.data(); if (x && x.key) months[x.key] = JSON.parse(x.json); });
+            store = migrate({ cfg: cfg, months: months });
+            saveLocal(); render(); setSave('Συγχρονίστηκε');
+          });
+        } else {
+          dirtyCfg = true; Object.keys(store.months).forEach(function (k) { dirtyMonths[k] = 1; }); flush();
+        }
+      });
+    }).catch(function () { setSave('Αποθήκευση μόνο σε αυτόν τον browser'); });
+  }
+
+  // ---------- counting / history ----------
+  function monthCounts(key) {
+    var doc = store.months[key]; if (!doc || !doc.cells) return null;
+    var y = +key.slice(0, 4), m = +key.slice(5, 7), hol = E.holidayMap(store.cfg, y), res = {};
+    Object.keys(doc.cells).forEach(function (ck) {
+      var parts = ck.split('|'), d = +parts[0], sh = shiftById(parts[1]); if (!sh) return;
+      var g = E.shiftGeom(sh), dw = E.dowOf(y, m, d), isH = !!hol[E.ymd(y, m, d)];
+      (doc.cells[ck] || []).forEach(function (sid) {
+        if (!sid) return;
+        var r = res[sid] || (res[sid] = { shifts: 0, hours: 0, nights: 0, weekend: 0, holiday: 0, by: {}, wd: [0, 0, 0, 0, 0, 0, 0] });
+        r.shifts++; r.hours += g.hours; if (g.night) r.nights++; if (dw === 0 || dw === 6) r.weekend++; if (isH) r.holiday++;
+        r.by[sh.id] = (r.by[sh.id] || 0) + 1; r.wd[dw]++;
+      });
+    });
+    return res;
+  }
+  function historyFor(y, m) {
+    if (store.cfg.weights.useHistory === false) return null;
+    var acc = {}, ym = [y, m];
+    for (var i = 0; i < 12; i++) {
+      ym = E.prevYM(ym[0], ym[1]);
+      var c = monthCounts(E.mkey(ym[0], ym[1])); if (!c) continue;
+      Object.keys(c).forEach(function (id) {
+        var a = acc[id] || (acc[id] = { nights: 0, weekend: 0, holiday: 0 });
+        a.nights += c[id].nights; a.weekend += c[id].weekend; a.holiday += c[id].holiday;
+      });
+    }
+    return acc;
+  }
+  function problem() { return E.buildProblem(store.cfg, ui.y, ui.m, monthDoc, { history: historyFor(ui.y, ui.m) }); }
+  var cache = null;
+  function current() {
+    var sig = JSON.stringify([store.cfg, store.months[curKey()], store.months[E.mkey.apply(null, E.prevYM(ui.y, ui.m))], ui.y, ui.m]);
+    if (cache && cache.sig === sig) return cache;
+    var P = problem();
+    cache = { sig: sig, P: P, an: E.analyze(P, P.init) };
+    return cache;
+  }
+  function writeAsg(P, asg) {
+    var doc = ensureMonth(P.key), cells = {};
+    P.cells.forEach(function (c, i) {
+      var k = (c.d + 1) + '|' + P.shifts[c.s].id;
+      (cells[k] = cells[k] || [])[c.k] = asg[i] >= 0 ? P.persons[asg[i]].id : null;
+    });
+    Object.keys(cells).forEach(function (k) {
+      var a = cells[k]; for (var i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = null;
+      while (a.length && a[a.length - 1] == null) a.pop();
+      if (!a.length) delete cells[k];
+    });
+    doc.cells = cells; markMonth(P.key);
+  }
+  function pushUndo(label) {
+    undoStack.push({ key: curKey(), data: clone(store.months[curKey()] || { cells: {}, locks: {} }), label: label });
+    if (undoStack.length > 30) undoStack.shift();
+  }
+  function undo() {
+    var u = undoStack.pop(); if (!u) return;
+    store.months[u.key] = u.data; markMonth(u.key);
+    var p = u.key.split('-'); ui.y = +p[0]; ui.m = +p[1];
+    toast('Αναιρέθηκε: ' + u.label); render();
+  }
+
+  // ---------- leave counting ----------
+  function leaveDays(from, to, mode, yearFilter) {
+    var n = 0, cur = from, guard = 0, hols = {};
+    while (cur <= to && guard++ < 800) {
+      var y = +cur.slice(0, 4);
+      if (yearFilter == null || y === yearFilter) {
+        if (!hols[y]) hols[y] = E.holidayMap(store.cfg, y);
+        var dw = E.parseYMD(cur).getDay(), isH = !!hols[y][cur];
+        if (mode === 'calendar') n++;
+        else if (mode === 'mon-sat') { if (dw !== 0 && !isH) n++; }
+        else { if (dw !== 0 && dw !== 6 && !isH) n++; }
+      }
+      cur = E.addDays(cur, 1);
+    }
+    return n;
+  }
+  function leaveBalance(staffId, year) {
+    var types = {}; store.cfg.leaveTypes.forEach(function (t) { types[t.id] = t; });
+    var mode = store.cfg.leaveCount, todayS = E.fmt(today), taken = 0, planned = 0, other = 0;
+    store.cfg.leaves.forEach(function (l) {
+      if (l.staffId !== staffId) return;
+      var t = types[l.type]; if (!t) return;
+      var to = l.to || l.from;
+      if (to.slice(0, 4) < String(year) || l.from.slice(0, 4) > String(year)) return;
+      if (t.deduct) {
+        if (to < todayS) taken += leaveDays(l.from, to, mode, year);
+        else if (l.from >= todayS) planned += leaveDays(l.from, to, mode, year);
+        else { taken += leaveDays(l.from, E.addDays(todayS, -1), mode, year); planned += leaveDays(todayS, to, mode, year); }
+      } else if (t.mode !== 'wish') other += leaveDays(l.from, to, 'calendar', year);
+    });
+    var st = staffById(staffId) || {};
+    var ent = (+st.leaveEntitlement || 0) + (+st.leaveCarry || 0);
+    return { ent: +st.leaveEntitlement || 0, carry: +st.leaveCarry || 0, taken: taken, planned: planned, left: ent - taken - planned, other: other };
+  }
+
+  // ---------- rendering ----------
+  var root = document.getElementById('app');
+  function render() {
+    if (REMOTE && ui.login) { root.innerHTML = viewLogin(); var f = document.getElementById('lg_pw'); if (f && !ui.login.busy) f.focus(); return; }
+    if (REMOTE && ui.loading) { root.innerHTML = '<div class="loginwrap"><div class="help">Φόρτωση από το Google Sheet…</div></div>'; return; }
+    var cur = current();
+    var hard = cur.an.hard;
+    var st = hard ? '<span class="pill bad"><span class="dot"></span>' + hard + (hard === 1 ? ' παράβαση' : ' παραβάσεις') + '</span>'
+      : '<span class="pill ok"><span class="dot"></span>Χωρίς παραβάσεις</span>';
+    var tabs = [['schedule', 'Πρόγραμμα'], ['staff', 'Προσωπικό'], ['leaves', 'Άδειες'], ['rules', 'Κανόνες & εξαρτήσεις'], ['stats', 'Στατιστικά'], ['settings', 'Ρυθμίσεις']];
+    var html = '<header class="top"><div class="top-in">' +
+      '<div class="brand"><h1>Βαρδιολόγιο</h1><small id="savemsg">' + esc(ui.saveMsg) + '</small></div>' +
+      '<div class="monthnav"><button class="btn icon ghost" data-act="mprev" aria-label="Προηγούμενος μήνας">‹</button>' +
+      '<div class="lbl">' + MONTHS[ui.m - 1] + ' ' + ui.y + '</div>' +
+      '<button class="btn icon ghost" data-act="mnext" aria-label="Επόμενος μήνας">›</button></div>' + st +
+      '</div><nav class="tabs" role="tablist">' + tabs.map(function (t) {
+        return '<button class="tab" role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0]) + '">' + t[1] +
+          (t[0] === 'schedule' && hard ? '<span class="cnt">' + hard + '</span>' : '') + '</button>';
+      }).join('') + '</nav></header><main>';
+    if (ui.tab === 'schedule') html += viewSchedule(cur);
+    else if (ui.tab === 'staff') html += viewStaff();
+    else if (ui.tab === 'leaves') html += viewLeaves();
+    else if (ui.tab === 'rules') html += viewRules();
+    else if (ui.tab === 'stats') html += viewStats();
+    else html += viewSettings();
+    html += '</main>';
+    if (ui.sel && ui.tab === 'schedule') html += viewDrawer(cur);
+    if (ui.gen) html += viewGen();
+    if (ui.confirm) html += '<div class="modal" role="dialog" aria-modal="true"><div class="box" style="width:min(440px,100%)"><div class="hd"><h2>Επιβεβαίωση</h2></div><div class="bd"><p style="margin:0">' + esc(ui.confirm.text) + '</p><div class="row end"><button class="btn" data-act="cfno">Άκυρο</button><button class="btn primary" data-act="cfyes">' + esc(ui.confirm.yes || 'Συνέχεια') + '</button></div></div></div></div>';
+    if (REMOTE && ui.onboard) html += viewOnboard();
+    html += '<div id="toastroot"></div>';
+    var sx = window.scrollX, sy = window.scrollY, gw = document.querySelector('.gridwrap'), gx = gw ? gw.scrollLeft : 0;
+    var db2 = document.querySelector('.drawer .dbd'), dy = db2 ? db2.scrollTop : 0;
+    root.innerHTML = html;
+    var gw2 = document.querySelector('.gridwrap'); if (gw2) gw2.scrollLeft = gx;
+    var db3 = document.querySelector('.drawer .dbd'); if (db3) db3.scrollTop = dy;
+    window.scrollTo(sx, sy);
+    renderToast();
+  }
+  function renderToast() {
+    var r = document.getElementById('toastroot'); if (!r) return;
+    r.innerHTML = ui.toast ? '<div class="toast" role="status">' + esc(ui.toast) + '</div>' : '';
+  }
+  function askConfirm(text, yes, fn) { ui.confirm = { text: text, yes: yes, fn: fn }; render(); }
+
+  // ----- schedule -----
+  function issueMaps(P, an) {
+    var hardC = {}, softC = {}, hardPD = {}, softPD = {};
+    an.issues.forEach(function (x) {
+      if (x.c != null) { hardC[x.c] = 1; return; }
+      if (x.p < 0 || x.d < 0) return;
+      var k = x.p + '|' + x.d;
+      if (x.hard) hardPD[k] = 1; else softPD[k] = 1;
+      P.cellsByDay[x.d].forEach(function (c) { if (P.init[c] === x.p) { if (x.hard) hardC[c] = 1; else softC[c] = 1; } });
+    });
+    return { hardC: hardC, softC: softC, hardPD: hardPD, softPD: softPD };
+  }
+  function headRow(P, extraLabel, sums) {
+    var pym = E.prevYM(ui.y, ui.m), pD = E.daysIn(pym[0], pym[1]);
+    var h = '<thead><tr><th class="lab">' + extraLabel + '</th>';
+    for (var d = pD - 2; d <= pD; d++) h += '<th class="dh pv' + (E.dowOf(pym[0], pym[1], d) === 1 ? ' wk' : '') + '"><b>' + d + '</b><span>' + WD[E.dowOf(pym[0], pym[1], d)] + '</span></th>';
+    var isCur = today.getFullYear() === ui.y && today.getMonth() + 1 === ui.m;
+    for (var i = 0; i < P.D; i++) {
+      var cls = 'dh' + (P.weekend[i] ? ' we' : '') + (P.holiday[i] ? ' ho' : '') + (isCur && today.getDate() === i + 1 ? ' today' : '');
+      if (P.dow[i] === 1) cls += ' wk';
+      h += '<th class="' + cls + '"' + (P.holiday[i] ? ' title="Αργία: ' + esc(P.holidayName[i]) + '"' : '') + '><b>' + (i + 1) + '</b><span>' + WD[P.dow[i]] + '</span></th>';
+    }
+    if (sums) sums.forEach(function (s) { h += '<th class="sum hd">' + s + '</th>'; });
+    return h + '</tr></thead>';
+  }
+  function pvWk(pd) { var pym = E.prevYM(ui.y, ui.m); return E.dowOf(pym[0], pym[1], pd) === 1 ? ' wk' : ''; }
+  function prevTds() { var pym = E.prevYM(ui.y, ui.m), pD = E.daysIn(pym[0], pym[1]), o = ''; for (var d = pD - 2; d <= pD; d++) o += '<td class="pv' + pvWk(d) + '"></td>'; return o; }
+  function dayCls(P, i) { return (P.weekend[i] ? ' we' : '') + (P.holiday[i] ? ' ho' : '') + (P.dow[i] === 1 ? ' wk' : ''); }
+
+  function viewSchedule(cur) {
+    var P = cur.P, an = cur.an, mp = issueMaps(P, an), doc = monthDoc(P.key);
+    var filled = P.init.filter(function (x) { return x >= 0; }).length;
+    var locks = doc && doc.locks ? Object.keys(doc.locks).length : 0;
+    var h = '<section class="card"><div class="hd">' +
+      '<div class="seg" role="group" aria-label="Προβολή"><button data-act="view" data-v="shift" aria-pressed="' + (ui.view === 'shift') + '">Ανά βάρδια</button><button data-act="view" data-v="person" aria-pressed="' + (ui.view === 'person') + '">Ανά άτομο</button></div>' +
+      '<span class="sp"></span>' +
+      '<button class="btn primary" data-act="gen" data-v="fresh" title="Φτιάχνει νέο πρόγραμμα για τις μη κλειδωμένες βάρδιες">Αυτόματη δημιουργία</button>' +
+      '<button class="btn" data-act="gen" data-v="repair" title="Διορθώνει παραβάσεις αλλάζοντας όσο γίνεται λιγότερες βάρδιες"' + (filled ? '' : ' disabled') + '>Διόρθωση με ελάχιστες αλλαγές</button>' +
+      '<button class="btn" data-act="undo"' + (undoStack.length ? '' : ' disabled') + '>Αναίρεση</button>' +
+      '<button class="btn" data-act="pdf">PDF</button>' +
+      '<button class="btn" data-act="xlsx">Excel</button>' +
+      '</div>';
+    if (!filled) h += '<div class="emptybanner"><strong>Ο ' + MONTHS[ui.m - 1].toLowerCase() + ' είναι κενός.</strong><span>Πάτα «Αυτόματη δημιουργία» και το πρόγραμμα θα συμπληρωθεί με βάση το προσωπικό, τις άδειες, τους κανόνες και τις τελευταίες μέρες του προηγούμενου μήνα.</span></div>';
+    h += '<div class="gridwrap">' + (ui.view === 'shift' ? gridByShift(P, mp) : gridByPerson(P, an, mp)) + '</div>';
+    h += '<div class="hd" style="border-top:1px solid var(--line);border-bottom:0"><span class="sub">Κλειδωμένες βάρδιες: ' + locks + '. Η αυτόματη δημιουργία και η διόρθωση δεν τις αλλάζουν.</span><span class="sp"></span>' +
+      '<label class="row" style="gap:6px;font-size:13px">Κλείδωσε έως και <input type="number" id="lockupto" min="1" max="' + P.D + '" value="' + Math.min(P.D, Math.max(1, (today.getFullYear() === ui.y && today.getMonth() + 1 === ui.m) ? today.getDate() : 1)) + '" style="width:62px"></label>' +
+      '<button class="btn sm" data-act="lockupto">Κλείδωμα</button><button class="btn sm" data-act="unlockall"' + (locks ? '' : ' disabled') + '>Ξεκλείδωμα όλων</button>' +
+      '<button class="btn sm danger" data-act="clearmonth"' + (filled ? '' : ' disabled') + '>Άδειασμα μήνα</button></div></section>';
+    h += '<div class="two">' + errorCard(P, an) + summaryCard(P, an) + '</div>';
+    return h;
+  }
+  // ----- error check card -----
+  var ERR_CATS = [
+    { id: 'uncovered', kinds: ['uncovered'], hard: 1, name: 'Κάλυψη βαρδιών', why: function () { return 'Κάθε βάρδια πρέπει να έχει τα άτομα που ορίζονται στους Κανόνες.'; } },
+    { id: 'avail', kinds: ['leave', 'unavail', 'notallowed', 'inactive', 'double'], hard: 1, name: 'Άδειες & διαθεσιμότητα', why: function () { return 'Κανείς δεν μπαίνει σε άδεια, σε μη διαθέσιμη μέρα, σε βάρδια «Ποτέ» ή σε δύο βάρδιες την ίδια μέρα.'; } },
+    { id: 'transition', kinds: ['transition'], hard: 1, name: 'Ανάπαυση μεταξύ βαρδιών', why: function () {
+      var f = store.cfg.rules.forbid || {}, names = {};
+      store.cfg.shifts.forEach(function (s) { names[s.id] = s.name; });
+      var l = Object.keys(f).filter(function (k) { return f[k]; }).map(function (k) { var p = k.split('>'); return (names[p[0]] || p[0]) + ' → ' + (names[p[1]] || p[1]); });
+      return l.length ? 'Απαγορεύονται: ' + l.join(', ') + '.' : 'Δεν έχει οριστεί απαγορευμένη διαδοχή.';
+    } },
+    { id: 'consecDays', kinds: ['consecDays'], hard: 1, name: 'Συνεχόμενες μέρες', why: function () { return 'Το πολύ ' + store.cfg.rules.maxConsecDays + ' μέρες στη σειρά, μετρώντας και το τέλος του προηγούμενου μήνα.'; } },
+    { id: 'consecNights', kinds: ['consecNights'], hard: 1, name: 'Συνεχόμενες νύχτες', why: function () { return 'Το πολύ ' + store.cfg.rules.maxConsecNights + ' νύχτες στη σειρά.'; } },
+    { id: 'weekMax', kinds: ['weekMax'], hard: 1, name: 'Μέγιστο ωρών εβδομάδας', why: function () { return 'Κανείς δεν ξεπερνά το εβδομαδιαίο μέγιστό του (Δευτέρα–Κυριακή).'; } },
+    { id: 'weekMin', kinds: ['weekMin'], hard: 1, name: 'Υποχρεωτικός στόχος ωρών', show: function () { return store.cfg.staff.some(function (s) { return s.targetHard; }); }, why: function () { return 'Όσοι έχουν υποχρεωτικό στόχο κάνουν τουλάχιστον τις ώρες τους κάθε εβδομάδα.'; } },
+    { id: 'nights', kinds: ['nightsMax', 'nightsMin'], hard: 1, name: 'Νύχτες ανά άτομο', show: function () { return store.cfg.staff.some(function (s) { return (s.maxNights != null && s.maxNights !== '') || +s.minNights > 0; }); }, why: function () { return 'Ελάχιστο και μέγιστο νυχτερινών τον μήνα, όπως ορίζονται στο Προσωπικό.'; } },
+    { id: 'weekendOff', kinds: ['weekendOff'], hard: 1, name: 'Ελεύθερα ΣΚ', show: function () { return store.cfg.staff.some(function (s) { return +s.weekendsOff > 0; }); }, why: function () { return 'Ρεπό Σάββατο και Κυριακή, και την Παρασκευή όχι νύχτα.'; } },
+    { id: 'pair', kinds: ['pair'], hard: 1, name: 'Εξαρτήσεις ατόμων', show: function () { return (store.cfg.pairs || []).some(function (r) { return r.type !== 'prefer'; }); }, why: function () { return 'Οι υποχρεωτικές εξαρτήσεις από τους Κανόνες.'; } },
+    { id: 'pref', kinds: ['pref'], hard: 0, name: 'Βάρδιες «αν γίνεται όχι»', why: function () { return 'Κάποιος πήρε βάρδια που προτιμά να αποφεύγει.'; } },
+    { id: 'wish', kinds: ['wish'], hard: 0, name: 'Επιθυμίες ρεπό', why: function () { return 'Κάποιος δουλεύει σε μέρα που είχε δηλώσει «Επιθυμία».'; } },
+    { id: 'hours', kinds: ['hours'], hard: 0, name: 'Απόκλιση από στόχο ωρών', why: function () { return 'Οι ώρες του μήνα απέχουν 16 ή περισσότερες από τον στόχο.'; } }
+  ];
+  function errCatOf(x) {
+    for (var i = 0; i < ERR_CATS.length; i++) if (ERR_CATS[i].kinds.indexOf(x.kind) >= 0) return ERR_CATS[i];
+    return x.hard ? ERR_CATS[1] : ERR_CATS[ERR_CATS.length - 1];
+  }
+  function errorCard(P, an) {
+    var F = ui.errF || (ui.errF = { sev: 'all', person: null, cat: null });
+    var byCat = {};
+    an.issues.forEach(function (x) { var c = errCatOf(x); (byCat[c.id] = byCat[c.id] || []).push(x); });
+    var hardN = an.issues.filter(function (x) { return x.hard; }).length, softN = an.issues.length - hardN;
+    var filled = P.init.filter(function (x) { return x >= 0; }).length;
+    var h = '<section class="card"><div class="hd"><h2>Έλεγχος Σφαλμάτων</h2>' +
+      (hardN ? '<span class="pill bad"><span class="dot"></span>' + hardN + (hardN === 1 ? ' σφάλμα' : ' σφάλματα') + '</span>' : '<span class="pill ok"><span class="dot"></span>Κανένα σφάλμα</span>') +
+      (softN ? '<span class="pill warn">' + softN + (softN === 1 ? ' προειδοποίηση' : ' προειδοποιήσεις') + '</span>' : '') +
+      '<span class="sp"></span><span class="sub">' + filled + ' από ' + P.C + ' βάρδιες · ' + P.persons.filter(function (p, i) { return P.active[i]; }).length + ' άτομα</span></div>';
+    // checklist of every rule that was checked
+    var cats = ERR_CATS.filter(function (c) { return !c.show || c.show() || byCat[c.id]; });
+    h += '<div class="errgrid">' + cats.map(function (c) {
+      var n = (byCat[c.id] || []).length, st = !n ? 'ok' : c.hard ? 'bad' : 'warn';
+      return '<button class="errcat ' + st + (F.cat === c.id ? ' on' : '') + '" data-act="errcat" data-v="' + c.id + '" title="' + esc(c.why()) + '"' + (n ? '' : ' disabled') + '>' +
+        '<span class="ic">' + (n ? (c.hard ? '✕' : '!') : '✓') + '</span><span class="nm">' + esc(c.name) + '</span><span class="ct">' + (n || '') + '</span></button>';
+    }).join('') + '</div>';
+    if (!an.issues.length) return h + '<div class="okmsg">Όλοι οι κανόνες τηρούνται και δεν υπάρχει καμία προειδοποίηση.</div></section>';
+    // filters
+    var people = {};
+    an.issues.forEach(function (x) { if (x.p >= 0) people[x.p] = (people[x.p] || 0) + 1; });
+    h += '<div class="errfilters"><div class="seg tiny">' + [['all', 'Όλα'], ['hard', 'Σφάλματα'], ['soft', 'Προειδοποιήσεις']].map(function (o) {
+      return '<button data-act="errsev" data-v="' + o[0] + '" aria-pressed="' + (F.sev === o[0]) + '">' + o[1] + '</button>';
+    }).join('') + '</div><span class="sp"></span>' + Object.keys(people).map(function (pi) {
+      var st = staffById(P.persons[pi].id);
+      return '<button class="errp' + (F.person === +pi ? ' on' : '') + '" data-act="errp" data-v="' + pi + '">' + chip(st) + '<span>' + people[pi] + '</span></button>';
+    }).join('') + (F.person != null || F.cat ? '<button class="btn sm ghost" data-act="errclear">Καθαρισμός</button>' : '') + '</div>';
+    // grouped list
+    var list = an.issues.filter(function (x) {
+      if (F.sev === 'hard' && !x.hard) return false;
+      if (F.sev === 'soft' && x.hard) return false;
+      if (F.person != null && x.p !== F.person) return false;
+      if (F.cat && errCatOf(x).id !== F.cat) return false;
+      return true;
+    });
+    if (!list.length) return h + '<div class="help" style="padding:14px">Κανένα αποτέλεσμα με αυτά τα φίλτρα.</div></section>';
+    var groups = {};
+    list.forEach(function (x) { var c = errCatOf(x); (groups[c.id] = groups[c.id] || { c: c, items: [] }).items.push(x); });
+    h += ERR_CATS.filter(function (c) { return groups[c.id]; }).map(function (c) {
+      var g = groups[c.id];
+      g.items.sort(function (a, b) { return a.d - b.d; });
+      return '<div class="errgroup"><div class="errgh"><span class="sev ' + (c.hard ? 'h' : 's') + '"></span><b>' + esc(c.name) + '</b><span class="help">' + esc(c.why()) + '</span></div>' +
+        '<ul class="issues">' + g.items.slice(0, 40).map(function (x) {
+          var dl = x.d >= 0 ? WD[P.dow[x.d]] + ' ' + (x.d + 1) : 'Μήνας';
+          var st = x.p >= 0 ? staffById(P.persons[x.p].id) : null;
+          var msg = st && x.msg.indexOf(st.code + ': ') === 0 ? x.msg.slice(st.code.length + 2) : x.msg;
+          return '<li data-act="goissue" data-i="' + an.issues.indexOf(x) + '"><span class="d">' + dl + '</span>' + (st ? chip(st) : '<span class="chip" style="background:var(--danger-soft);color:var(--danger)">—</span>') + '<span style="flex:1">' + esc(msg) + '</span></li>';
+        }).join('') + '</ul>' + (g.items.length > 40 ? '<div class="help" style="padding:6px 14px">…και ' + (g.items.length - 40) + ' ακόμη.</div>' : '') + '</div>';
+    }).join('');
+    return h + '</section>';
+  }
+  function summaryCard(P, an) {
+    var maxH = 1; an.per.forEach(function (x) { maxH = Math.max(maxH, x.hours, x.target); });
+    var rows = P.persons.map(function (p, i) {
+      var st = staffById(p.id), x = an.per[i];
+      if (!P.active[i] && !x.hours) return '';
+      var dev = x.hours - x.target;
+      return '<tr><td>' + chip(st) + '</td><td style="min-width:130px"><div class="meter" title="Ώρες ' + x.hours + ' / στόχος ' + Math.round(x.target) + '"><i style="width:' + (x.hours / maxH * 100) + '%;background:' + esc(st.color) + '"></i><b style="left:' + (x.target / maxH * 100) + '%"></b></div></td>' +
+        '<td class="n">' + x.hours + '</td><td class="n">' + Math.round(x.target) + ' <span class="dev ' + (dev > 8 ? 'up' : dev < -8 ? 'dn' : '') + '">' + (dev >= 0 ? '+' : '') + Math.round(dev) + '</span></td>' +
+        '<td class="n">' + x.nights + '</td><td class="n">' + x.weekend + '</td><td class="n">' + x.holiday + '</td></tr>';
+    }).join('');
+    return '<section class="card"><div class="hd"><h2>Σύνοψη μήνα</h2><span class="sub">η γραμμή δείχνει τον στόχο ωρών (με αφαίρεση αδειών)</span></div><div class="twrap"><table class="t"><thead><tr><th></th><th>Ώρες</th><th class="n">Ώρες</th><th class="n">Στόχος</th><th class="n">Νύχτ.</th><th class="n">ΣΚ</th><th class="n">Αργ.</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  }
+  function gridByShift(P, mp) {
+    var doc = monthDoc(P.key), pym = E.prevYM(ui.y, ui.m), pD = E.daysIn(pym[0], pym[1]), pdoc = monthDoc(E.mkey(pym[0], pym[1]));
+    var h = '<table class="roster">' + headRow(P, 'Βάρδια', null) + '<tbody>';
+    var selC = selectedCell(P);
+    P.shifts.forEach(function (s, si) {
+      var sh = store.cfg.shifts[si];
+      var maxK = 0; P.cells.forEach(function (c) { if (c.s === si) maxK = Math.max(maxK, c.k + 1); });
+      for (var k = 0; k < maxK; k++) {
+        h += '<tr' + (k === 0 && si > 0 ? ' class="sepr"' : '') + '><th class="lab"><span class="shiftlab"><i style="background:' + esc(sh.color || '#888') + '"></i><span>' + esc(s.name) + (maxK > 1 ? ' ' + (k + 1) : '') + '<br><small>' + hm(sh) + '</small></span></span></th>';
+        for (var pd = pD - 2; pd <= pD; pd++) {
+          var pid = pdoc && pdoc.cells && pdoc.cells[pd + '|' + s.id] ? pdoc.cells[pd + '|' + s.id][k] : null, pst = pid ? staffById(pid) : null;
+          h += '<td class="c pv' + pvWk(pd) + '" style="cursor:default">' + (pst ? '<span class="v" style="background:' + esc(pst.color) + ';color:' + inkOn(pst.color) + '">' + esc(pst.code) + '</span>' : '') + '</td>';
+        }
+        for (var d = 0; d < P.D; d++) {
+          var ci = -1, list = P.cellsByDay[d];
+          for (var j = 0; j < list.length; j++) { var cc = P.cells[list[j]]; if (cc.s === si && cc.k === k) { ci = list[j]; break; } }
+          if (ci < 0) { h += '<td class="' + dayCls(P, d) + '"></td>'; continue; }
+          var p = P.init[ci], st = p >= 0 ? staffById(P.persons[p].id) : null;
+          var locked = doc && doc.locks && doc.locks[(d + 1) + '|' + s.id + '|' + k];
+          var cls = 'c' + dayCls(P, d) + (mp.hardC[ci] ? ' bad' : mp.softC[ci] ? ' soft' : '') + (selC === ci ? ' sel' : '');
+          h += '<td class="' + cls + '" data-act="cell" data-d="' + d + '" data-s="' + s.id + '" data-k="' + k + '" tabindex="0" aria-label="' + esc(s.name + ' ' + (d + 1) + ': ' + (st ? st.code : 'κενό')) + '">' +
+            (st ? '<span class="v" style="background:' + esc(st.color) + ';color:' + inkOn(st.color) + '">' + esc(st.code) + (locked ? '<span class="lk">🔒</span>' : '') + '</span>'
+              : '<span class="v empty">' + (P.cells[ci].req ? '—' : '+') + (locked ? '<span class="lk">🔒</span>' : '') + '</span>') + '</td>';
+        }
+        h += '</tr>';
+      }
+    });
+    // leaves row
+    var types = {}; store.cfg.leaveTypes.forEach(function (t) { types[t.id] = t; });
+    var li = E.leaveIndex(store.cfg);
+    h += '<tr class="lvrow sepr"><th class="lab">Άδειες / απουσίες</th>' + prevTds() + '';
+    for (var d2 = 0; d2 < P.D; d2++) {
+      var inner = '';
+      store.cfg.staff.forEach(function (st) {
+        var e = li[st.id + '|' + E.ymd(ui.y, ui.m, d2 + 1)];
+        if (!e) return;
+        var lv = store.cfg.leaves.find(function (l) { return l.id === e.leaveId; }), t = lv ? types[lv.type] : null;
+        var col = t ? t.color : '#888';
+        inner += '<span class="lvc" title="' + esc(st.code + ': ' + e.type) + '" style="background:' + esc(col) + ';color:' + inkOn(col) + (e.kind === 3 ? ';opacity:.7' : '') + '">' + esc(st.code) + '</span>';
+      });
+      h += '<td class="' + dayCls(P, d2) + '">' + inner + '</td>';
+    }
+    return h + '</tr></tbody></table>';
+  }
+  function gridByPerson(P, an, mp) {
+    var pym = E.prevYM(ui.y, ui.m), pD = E.daysIn(pym[0], pym[1]), pdoc = monthDoc(E.mkey(pym[0], pym[1]));
+    var h = '<table class="roster">' + headRow(P, 'Άτομο', ['Ώρες', 'Στόχος', 'Νύχτ.', 'ΣΚ']) + '<tbody>';
+    var shColor = {}; store.cfg.shifts.forEach(function (s) { shColor[s.id] = s.color || '#888'; });
+    P.persons.forEach(function (p, pi) {
+      var st = staffById(p.id), x = an.per[pi];
+      if (!P.active[pi] && !x.hours) return;
+      h += '<tr><th class="lab"><span class="row" style="gap:8px;flex-wrap:nowrap">' + chip(st) + '<span style="overflow:hidden;text-overflow:ellipsis;font-weight:500">' + esc(st.name || '') + '</span></span></th>';
+      for (var pd = pD - 2; pd <= pD; pd++) {
+        var code = '';
+        if (pdoc && pdoc.cells) store.cfg.shifts.forEach(function (s) { var a = pdoc.cells[pd + '|' + s.id]; if (a && a.indexOf(p.id) >= 0) code = s; });
+        h += '<td class="c pv' + pvWk(pd) + '" style="cursor:default">' + (code ? '<span class="v" style="background:' + esc(code.color) + ';color:' + inkOn(code.color) + '">' + esc(code.code) + '</span>' : '') + '</td>';
+      }
+      for (var d = 0; d < P.D; d++) {
+        var s = null;
+        P.cellsByDay[d].forEach(function (c) { if (P.init[c] === pi) s = P.cells[c].s; });
+        var lv = P.leave[pi * P.D + d], ln = P.leaveName[pi * P.D + d];
+        var k = pi + '|' + d, sel = ui.sel && ui.sel.p === p.id && ui.sel.d === d;
+        var cls = 'c' + dayCls(P, d) + (mp.hardPD[k] ? ' bad' : mp.softPD[k] ? ' soft' : '') + (sel ? ' sel' : '');
+        var inner = '';
+        if (s != null) { var sh = store.cfg.shifts[s]; inner = '<span class="v" style="background:' + esc(sh.color) + ';color:' + inkOn(sh.color) + '">' + esc(sh.code) + '</span>'; }
+        else if (lv) inner = '<span class="v leave" title="' + esc(ln) + '">' + esc(leaveAbbr(ln)) + '</span>';
+        h += '<td class="' + cls + '" data-act="pcell" data-p="' + p.id + '" data-d="' + d + '" tabindex="0">' + inner + '</td>';
+      }
+      var dev = x.hours - x.target;
+      h += '<td class="sum">' + x.hours + '</td><td class="sum">' + Math.round(x.target) + '</td><td class="sum">' + x.nights + '</td><td class="sum">' + x.weekend + '</td></tr>';
+    });
+    // coverage row
+    h += '<tr class="sepr"><th class="lab">Κάλυψη</th>' + prevTds() + '';
+    for (var d3 = 0; d3 < P.D; d3++) {
+      var miss = 0; P.cellsByDay[d3].forEach(function (c) { if (P.cells[c].req && P.init[c] < 0) miss++; });
+      h += '<td class="' + dayCls(P, d3) + '" style="font-family:var(--f-mono);font-size:11px;font-weight:700;color:' + (miss ? 'var(--danger)' : 'var(--ok)') + '">' + (miss ? '−' + miss : '✓') + '</td>';
+    }
+    return h + '<td class="sum" colspan="4"></td></tr></tbody></table>';
+  }
+  function leaveAbbr(name) {
+    var t = store.cfg.leaveTypes.find(function (x) { return x.name === name; });
+    return t && t.code ? t.code : String(name || 'ΑΔ').slice(0, 2).toUpperCase();
+  }
+  function selectedCell(P) {
+    if (!ui.sel || ui.sel.s == null) return -1;
+    var list = P.cellsByDay[ui.sel.d] || [];
+    for (var j = 0; j < list.length; j++) { var c = P.cells[list[j]]; if (P.shifts[c.s].id === ui.sel.s && c.k === ui.sel.k) return list[j]; }
+    return -1;
+  }
+
+  // ----- drawer -----
+  function viewDrawer(cur) {
+    var P = cur.P, h = '<div class="scrim" data-act="closesel"></div><aside class="drawer" role="dialog" aria-label="Επεξεργασία">';
+    if (ui.sel.s != null) {
+      var ci = selectedCell(P);
+      if (ci < 0) { ui.sel = null; return ''; }
+      var cell = P.cells[ci], sh = store.cfg.shifts[cell.s], doc = monthDoc(P.key);
+      var locked = doc && doc.locks && doc.locks[(cell.d + 1) + '|' + sh.id + '|' + cell.k];
+      var curP = P.init[ci];
+      h += '<div class="dhd"><div class="row"><h3>' + esc(sh.name) + ' ' + hm(sh) + '</h3><span class="sp"></span><button class="btn icon ghost" data-act="closesel" aria-label="Κλείσιμο">✕</button></div>' +
+        '<div class="help">' + dateLabel(cell.d + 1) + (P.holiday[cell.d] ? ' · ' + esc(P.holidayName[cell.d]) : '') + (cell.req ? '' : ' · επιπλέον θέση') + '</div>' +
+        '<div class="row"><button class="btn sm" data-act="lock">' + (locked ? 'Ξεκλείδωμα' : 'Κλείδωμα') + '</button>' +
+        '<button class="btn sm" data-act="setcell" data-p="-1"' + (curP < 0 ? ' disabled' : '') + '>Κενό</button>' +
+        '<button class="btn sm" data-act="addslot">+ Επιπλέον άτομο</button></div></div><div class="dbd">';
+      var cands = E.candidates(P, P.init, ci), base = cur.an;
+      h += '<div class="help" style="padding:10px 16px 4px">Ποιος μπορεί να καλύψει τη βάρδια (οι καταλληλότεροι πρώτοι):</div>';
+      cands.forEach(function (c) {
+        var st = staffById(P.persons[c.p].id), tag, list = c.issues;
+        if (c.current) {
+          tag = '<span class="tag">Τρέχων</span>';
+          list = base.issues.filter(function (x) { return x.p === c.p && x.d === cell.d; });
+        } else if (c.hardDelta > 0) tag = '<span class="tag bad">Παραβιάζει κανόνα</span>';
+        else if (c.hardDelta < 0) tag = '<span class="tag ok">Λύνει παράβαση</span>';
+        else if (c.costDelta > 25) tag = '<span class="tag warn">Επιτρέπεται, λιγότερο ισορροπημένο</span>';
+        else tag = '<span class="tag ok">Κατάλληλος</span>';
+        var seen = {}, msgs = [];
+        list.forEach(function (x) { if (!seen[x.msg] && msgs.length < 4) { seen[x.msg] = 1; msgs.push(x); } });
+        h += '<button class="cand' + (c.current ? ' cur' : '') + '" data-act="setcell" data-p="' + c.p + '">' + chip(st) +
+          '<span class="who"><strong>' + esc(st.name || st.code) + '</strong>' + tag +
+          (msgs.length ? '<ul>' + msgs.map(function (x) { return '<li style="color:' + (x.hard ? 'var(--danger)' : 'var(--ink-2)') + '">' + esc(x.msg) + '</li>'; }).join('') + '</ul>' : '') + '</span></button>';
+      });
+      h += '</div>';
+    } else {
+      var pi = store.cfg.staff.findIndex(function (s) { return s.id === ui.sel.p; });
+      if (pi < 0) { ui.sel = null; return ''; }
+      var st2 = store.cfg.staff[pi], d = ui.sel.d, curS = null;
+      P.cellsByDay[d].forEach(function (c) { if (P.init[c] === pi) curS = P.shifts[P.cells[c].s].id; });
+      var lv = P.leaveName[pi * P.D + d];
+      h += '<div class="dhd"><div class="row">' + chip(st2) + '<h3>' + esc(st2.name || st2.code) + '</h3><span class="sp"></span><button class="btn icon ghost" data-act="closesel" aria-label="Κλείσιμο">✕</button></div>' +
+        '<div class="help">' + dateLabel(d + 1) + (lv ? ' · ' + esc(lv) : '') + '</div></div><div class="dbd" style="padding:14px 16px;display:grid;gap:14px">';
+      h += '<div><div class="help" style="margin-bottom:6px">Βάρδια αυτή τη μέρα</div><div class="row">' + store.cfg.shifts.map(function (s) {
+        return '<button class="btn sm" data-act="psetshift" data-v="' + s.id + '" aria-pressed="' + (curS === s.id) + '" style="' + (curS === s.id ? 'background:' + esc(s.color) + ';color:' + inkOn(s.color) + ';border-color:' + esc(s.color) : '') + '">' + esc(s.name) + '</button>';
+      }).join('') + '<button class="btn sm" data-act="psetshift" data-v=""' + (curS ? '' : ' disabled') + '>Ρεπό</button></div></div>';
+      var iss = current().an.issues.filter(function (x) { return x.p === pi && x.d === d; });
+      if (iss.length) h += '<div><div class="help" style="margin-bottom:6px">Προβλήματα</div><ul style="margin:0;padding-left:18px">' + iss.map(function (x) { return '<li style="color:' + (x.hard ? 'var(--danger)' : 'var(--ink-2)') + '">' + esc(x.msg) + '</li>'; }).join('') + '</ul></div>';
+      h += '<div><div class="help" style="margin-bottom:6px">Γρήγορη καταχώριση απουσίας για αυτή τη μέρα</div><div class="row"><select id="qltype">' +
+        store.cfg.leaveTypes.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('') +
+        '</select><button class="btn sm" data-act="qleave">Καταχώριση</button></div><div class="help" style="margin-top:6px">Μετά πάτα «Διόρθωση με ελάχιστες αλλαγές» για να βρεθεί αντικαταστάτης.</div></div>';
+      h += '</div>';
+    }
+    return h + '</aside>';
+  }
+
+  // ----- generation modal -----
+  function viewGen() {
+    var g = ui.gen;
+    var title = g.mode === 'repair' ? 'Διόρθωση με ελάχιστες αλλαγές' : 'Αυτόματη δημιουργία προγράμματος';
+    var h = '<div class="modal" role="dialog" aria-modal="true"><div class="box"><div class="hd"><h2>' + title + '</h2><span class="sp"></span>' + (g.results ? '<button class="btn icon ghost" data-act="genclose" aria-label="Κλείσιμο">✕</button>' : '') + '</div><div class="bd">';
+    if (!g.results) {
+      h += '<p class="help" style="margin:0">Δοκιμάζονται χιλιάδες συνδυασμοί για να βρεθούν ' + (g.mode === 'repair' ? 'οι μικρότερες αλλαγές που λύνουν τις παραβάσεις.' : 'τρεις εναλλακτικές λύσεις που τηρούν τους κανόνες και μοιράζουν δίκαια νύχτες, Σαββατοκύριακα και αργίες.') + '</p>' +
+        '<div class="progress"><i id="genbar" style="width:' + Math.round(g.progress * 100) + '%"></i></div>';
+    } else {
+      h += '<div class="alts">' + g.results.map(function (r, i) {
+        var m = r.metrics;
+        return '<div class="alt' + (i === 0 ? ' best' : '') + '"><h3>Λύση ' + (i + 1) + (i === 0 ? ' · προτεινόμενη' : '') + '</h3><dl>' +
+          '<dt>Παραβάσεις κανόνων</dt><dd style="color:' + (m.hard ? 'var(--danger)' : 'var(--ok)') + '">' + m.hard + '</dd>' +
+          (g.mode === 'repair' ? '<dt>Αλλαγμένες βάρδιες</dt><dd>' + m.changes + '</dd>' : '') +
+          '<dt>Απόκλιση ωρών (σύνολο)</dt><dd>' + m.hoursDev + 'ώ</dd>' +
+          '<dt>Νύχτες ανά άτομο</dt><dd>' + m.nights + '</dd>' +
+          '<dt>ΣΚ ανά άτομο</dt><dd>' + m.weekend + '</dd>' +
+          '<dt>Προτιμήσεις που δεν τηρήθηκαν</dt><dd>' + m.soft + '</dd></dl>' +
+          '<button class="btn' + (i === 0 ? ' primary' : '') + '" data-act="genapply" data-i="' + i + '">Εφαρμογή</button></div>';
+      }).join('') + '</div>';
+      var worst = g.results[0].metrics.hard;
+      var fzm = worst ? feasibility().msgs : [];
+      if (fzm.length) h += '<div style="color:var(--danger)"><b>Αιτία, βάσει του ελέγχου εφικτότητας:</b><ul style="margin:6px 0 0;padding-left:18px">' + fzm.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+      if (worst) h += '<p class="help" style="margin:0;color:var(--danger)">Δεν βρέθηκε λύση χωρίς παραβάσεις. Συνήθως φταίει ότι δεν επαρκεί το προσωπικό για τις απαιτούμενες βάρδιες (δες «Κανόνες → Χωρητικότητα») ή ότι οι άδειες/διαθεσιμότητες είναι πολύ περιοριστικές. Μετά την εφαρμογή, οι παραβάσεις φαίνονται στον έλεγχο κανόνων.</p>';
+      h += '<p class="help" style="margin:0">Οι κλειδωμένες βάρδιες δεν άλλαξαν. Μετά την εφαρμογή μπορείς να πατήσεις «Αναίρεση».</p>';
+    }
+    return h + '</div></div></div>';
+  }
+
+  function runSolver(P, mode, seeds, onProg) {
+    return new Promise(function (resolve) {
+      var done = false;
+      function fallback() {
+        if (done) return; done = true;
+        setTimeout(function () { resolve(seeds.map(function (sd) { return E.solve(clone(P), { mode: mode, seed: sd, iters: 60000 }); })); }, 30);
+      }
+      try {
+        var src = document.getElementById('engine-src').textContent;
+        var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+        var w = new Worker(url);
+        w.onmessage = function (e) {
+          if (e.data.type === 'progress') onProg(e.data.frac);
+          else if (!done) { done = true; resolve(e.data.results); w.terminate(); }
+        };
+        w.onerror = function () { w.terminate(); fallback(); };
+        w.postMessage({ P: P, mode: mode, seeds: seeds });
+      } catch (e) { fallback(); }
+    });
+  }
+  function startGen(mode) {
+    ui.sel = null;
+    var P = problem();
+    ui.gen = { mode: mode, progress: 0, results: null };
+    render();
+    var seeds = [1, 2, 3].map(function () { return Math.floor(Math.random() * 1e9); });
+    runSolver(P, mode, seeds, function (f) {
+      ui.gen.progress = f; var b = document.getElementById('genbar'); if (b) b.style.width = Math.round(f * 100) + '%';
+    }).then(function (results) {
+      if (!ui.gen) return;
+      var P2 = problem();
+      var out = results.map(function (r) {
+        var an = E.analyze(P2, r.asg);
+        var dev = 0, nMin = 1e9, nMax = 0, wMin = 1e9, wMax = 0;
+        an.per.forEach(function (x, i) {
+          if (!P2.active[i]) return;
+          dev += Math.abs(x.hours - x.target);
+          if (P2.fwN[i] > 0 && staffById(P2.persons[i].id).weeklyTarget >= 30) { nMin = Math.min(nMin, x.nights); nMax = Math.max(nMax, x.nights); }
+          if (staffById(P2.persons[i].id).weeklyTarget >= 30) { wMin = Math.min(wMin, x.weekend); wMax = Math.max(wMax, x.weekend); }
+        });
+        var changes = 0; r.asg.forEach(function (p, i) { if (p !== P2.init[i]) changes++; });
+        return { asg: r.asg, cost: an.cost, metrics: {
+          hard: an.hard, soft: an.issues.filter(function (x) { return !x.hard && x.d >= 0; }).length,
+          hoursDev: Math.round(dev), nights: nMin > nMax ? '—' : nMin + '–' + nMax, weekend: wMin > wMax ? '—' : wMin + '–' + wMax, changes: changes
+        } };
+      });
+      out.sort(function (a, b) { return a.metrics.hard - b.metrics.hard || a.cost - b.cost; });
+      // drop duplicates
+      var seen = {}; out = out.filter(function (r) { var k = r.asg.join(','); if (seen[k]) return false; seen[k] = 1; return true; });
+      ui.gen.results = out; render();
+    });
+  }
+
+  // ----- staff -----
+  function viewStaff() {
+    var cfg = store.cfg;
+    var h = '<section class="card"><div class="hd"><h2>Προσωπικό</h2><span class="sub">' + cfg.staff.filter(function (s) { return s.active !== false; }).length + ' ενεργά άτομα</span><span class="sp"></span><button class="btn primary" data-act="addstaff">+ Προσθήκη ατόμου</button></div>' +
+      '<div class="bd help">Ο <b>στόχος ωρών</b> είναι αυτό που προσπαθεί να πετύχει το πρόγραμμα. Το <b>μέγιστο</b> δεν ξεπερνιέται ποτέ σε καμία εβδομάδα (Δευτέρα–Κυριακή, μετρώντας και τις μέρες του προηγούμενου μήνα). Με τον <b>υποχρεωτικό στόχο</b>, ο στόχος γίνεται κανόνας: αν μια εβδομάδα βγει με λιγότερες ώρες, μετράει ως παράβαση. «Αν γίνεται όχι» σημαίνει ότι η βάρδια αποφεύγεται αλλά μπορεί να δοθεί αν δεν υπάρχει άλλη λύση. Στη διαθεσιμότητα, πάτα ένα κουτάκι για να το κλείσεις.</div></section>';
+    var groups = cfg.groups || [];
+    h += '<section class="card"><div class="hd"><h2>Ομάδες</h2><span class="sub">ρόλοι με δικό τους χρώμα, χρησιμοποιούνται στο PDF</span><span class="sp"></span><button class="btn sm" data-act="addgroup">+ Ομάδα</button></div><div class="bd" style="display:grid;gap:8px">' +
+      (groups.length ? groups.map(function (g) {
+        var n = cfg.staff.filter(function (p) { return p.groupId === g.id; }).length;
+        return '<div class="row"><input type="color" value="' + esc(g.color) + '" data-f="group" data-id="' + g.id + '" data-k="color" aria-label="Χρώμα ομάδας"><input type="text" value="' + esc(g.name) + '" data-f="group" data-id="' + g.id + '" data-k="name" style="width:200px" aria-label="Όνομα ομάδας"><span class="help">' + n + (n === 1 ? ' άτομο' : ' άτομα') + '</span><span class="sp"></span><button class="btn sm ghost danger" data-act="delgroup" data-id="' + g.id + '">Διαγραφή</button></div>';
+      }).join('') : '<div class="help">Καμία ομάδα. Στο PDF κάθε άτομο θα έχει το δικό του χρώμα.</div>') +
+      '</div></section>';
+    h += '<div class="staffgrid">' + cfg.staff.map(function (s) {
+      var off = s.active === false;
+      var shiftPrefs = cfg.shifts.map(function (sh) {
+        var v = (s.shifts || {})[sh.id] || 'yes';
+        return '<div class="sh-line"><span>' + esc(sh.name) + '</span><div class="seg tiny">' +
+          [['yes', 'Ναι'], ['avoid', 'Αν γίνεται όχι'], ['no', 'Ποτέ']].map(function (o) {
+            return '<button data-act="shpref" data-id="' + s.id + '" data-s="' + sh.id + '" data-v="' + o[0] + '" aria-pressed="' + (v === o[0]) + '">' + o[1] + '</button>';
+          }).join('') + '</div></div>';
+      }).join('');
+      var av = '<table class="avail"><thead><tr><th></th>' + WEEK_ORDER.map(function (w) { return '<th>' + WD[w] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        cfg.shifts.map(function (sh) {
+          return '<tr><th style="text-align:left">' + esc(sh.code) + '</th>' + WEEK_ORDER.map(function (w) {
+            var on = !(s.avail && s.avail[w] && s.avail[w][sh.id] === false);
+            return '<td><button data-act="avail" data-id="' + s.id + '" data-w="' + w + '" data-s="' + sh.id + '" data-on="' + (on ? 1 : 0) + '" aria-label="' + esc(WD_LONG[w] + ' ' + sh.name + (on ? ' διαθέσιμος' : ' μη διαθέσιμος')) + '">' + (on ? '✓' : '✕') + '</button></td>';
+          }).join('') + '</tr>';
+        }).join('') + '</tbody></table>';
+      return '<article class="person' + (off ? ' off' : '') + '"><div class="ph">' +
+        '<input type="color" value="' + esc(s.color) + '" data-f="staff" data-id="' + s.id + '" data-k="color" aria-label="Χρώμα">' +
+        '<input type="text" class="code" value="' + esc(s.code) + '" data-f="staff" data-id="' + s.id + '" data-k="code" maxlength="4" aria-label="Ακρωνύμιο">' +
+        '<input type="text" class="nm" value="' + esc(s.name || '') + '" placeholder="Ονοματεπώνυμο" data-f="staff" data-id="' + s.id + '" data-k="name" aria-label="Όνομα">' +
+        '</div><div class="pb">' +
+        (groups.length ? '<label class="f">Ομάδα<select data-f="staff" data-id="' + s.id + '" data-k="groupId"><option value="">Χωρίς ομάδα</option>' + groups.map(function (g) { return '<option value="' + g.id + '"' + (s.groupId === g.id ? ' selected' : '') + '>' + esc(g.name) + '</option>'; }).join('') + '</select></label>' : '') +
+        '<div class="kv"><label class="f">Στόχος ώρες / εβδ.<input type="number" min="0" max="80" value="' + esc(s.weeklyTarget) + '" data-f="staff" data-id="' + s.id + '" data-k="weeklyTarget" data-num="1"></label>' +
+        '<label class="f">Μέγιστο ώρες / εβδ.<input type="number" min="0" max="96" value="' + esc(s.weeklyMax) + '" data-f="staff" data-id="' + s.id + '" data-k="weeklyMax" data-num="1"></label>' +
+        '<label class="row" style="gap:8px;grid-column:1/-1;font-size:13px"><input type="checkbox" data-f="staff" data-id="' + s.id + '" data-k="targetHard" data-bool="1"' + (s.targetHard ? ' checked' : '') + '> <span><b>Υποχρεωτικός στόχος</b> <span class="help">· κάθε εβδομάδα τουλάχιστον ' + esc(s.weeklyTarget) + ' ώρες (λιγότερες όταν έχει άδεια)</span></span></label>' +
+        '<label class="f">Νύχτες / μήνα, ελάχιστο<input type="number" min="0" max="31" value="' + esc(s.minNights == null ? '' : s.minNights) + '" placeholder="—" data-f="staff" data-id="' + s.id + '" data-k="minNights" data-opt="1"></label>' +
+        '<label class="f">Νύχτες / μήνα, μέγιστο<input type="number" min="0" max="31" value="' + esc(s.maxNights == null ? '' : s.maxNights) + '" placeholder="χωρίς όριο" data-f="staff" data-id="' + s.id + '" data-k="maxNights" data-opt="1"></label>' +
+        '<label class="f" style="grid-column:1/-1">Ελεύθερα ΣΚ / μήνα, τουλάχιστον<input type="number" min="0" max="5" value="' + esc(s.weekendsOff || 0) + '" data-f="staff" data-id="' + s.id + '" data-k="weekendsOff" data-num="1"><span class="help" style="font-weight:400">Ελεύθερο ΣΚ σημαίνει ρεπό Σάββατο και Κυριακή, και την Παρασκευή όχι νύχτα (φεύγει το αργότερο από απόγευμα).</span></label>' +
+        '<label class="f">Γενέθλια <span class="help" style="font-weight:400">(μόνο για ενημέρωση)</span><input type="date" value="' + esc(s.birthday || '') + '" data-f="staff" data-id="' + s.id + '" data-k="birthday"></label>' +
+        '<label class="f">Γιορτή <span class="help" style="font-weight:400">(μόνο για ενημέρωση)</span><input type="date" value="' + esc(s.nameday || '') + '" data-f="staff" data-id="' + s.id + '" data-k="nameday"></label>' +
+        '<label class="f">Άδεια / έτος (ημ.)<input type="number" min="0" max="60" value="' + esc(s.leaveEntitlement || 0) + '" data-f="staff" data-id="' + s.id + '" data-k="leaveEntitlement" data-num="1"></label>' +
+        '<label class="f">Μεταφορά από πέρσι<input type="number" min="0" max="60" value="' + esc(s.leaveCarry || 0) + '" data-f="staff" data-id="' + s.id + '" data-k="leaveCarry" data-num="1"></label></div>' +
+        '<div style="display:grid;gap:6px"><div class="help">Βάρδιες</div>' + shiftPrefs + '</div>' +
+        '<div style="display:grid;gap:6px"><div class="help">Διαθεσιμότητα ανά μέρα</div><div class="twrap">' + av + '</div></div>' +
+        '<div class="row"><label class="row" style="gap:6px"><input type="checkbox" data-f="staff" data-id="' + s.id + '" data-k="active" data-bool="1"' + (off ? '' : ' checked') + '> Ενεργό</label><span class="sp"></span>' +
+        '<button class="btn sm danger" data-act="delstaff" data-id="' + s.id + '">Διαγραφή</button></div>' +
+        '</div></article>';
+    }).join('') + '</div>';
+    return h;
+  }
+
+  // ----- leaves -----
+  function viewLeaves() {
+    var cfg = store.cfg, y = ui.leaveYear;
+    var types = {}; cfg.leaveTypes.forEach(function (t) { types[t.id] = t; });
+    var modeLbl = { calendar: 'ημερολογιακές μέρες', 'mon-fri': 'εργάσιμες Δευ–Παρ χωρίς αργίες', 'mon-sat': 'εργάσιμες Δευ–Σαβ χωρίς αργίες' }[cfg.leaveCount];
+    var h = '<section class="card"><div class="hd"><h2>Νέα άδεια ή απουσία</h2></div><div class="bd"><div class="row" style="align-items:flex-end">' +
+      '<label class="f">Άτομο<select id="lv_staff">' + cfg.staff.map(function (s) { return '<option value="' + s.id + '">' + esc(s.code + (s.name ? ' · ' + s.name : '')) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">Τύπος<select id="lv_type">' + cfg.leaveTypes.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">Από<input type="date" id="lv_from" value="' + E.ymd(ui.y, ui.m, 1) + '"></label>' +
+      '<label class="f">Έως<input type="date" id="lv_to" value="' + E.ymd(ui.y, ui.m, 1) + '"></label>' +
+      '<label class="f" style="flex:1;min-width:160px">Σημείωση<input type="text" id="lv_note" placeholder="προαιρετικό"></label>' +
+      '<button class="btn primary" data-act="addleave">Καταχώριση</button></div>' +
+      '<p class="help" style="margin:10px 0 0">Η «Κανονική άδεια» αφαιρείται από το δικαίωμα και μειώνει τον στόχο ωρών του μήνα. Το «Αίτημα ρεπό» απαγορεύει βάρδια χωρίς να μειώνει στόχο. Η «Επιθυμία» αποφεύγεται μόνο αν γίνεται. Τους τύπους τους αλλάζεις στις Ρυθμίσεις.</p></div></section>';
+    h += '<section class="card"><div class="hd"><h2>Υπόλοιπα αδειών ' + y + '</h2><span class="sub">μετρώνται ' + modeLbl + '</span><span class="sp"></span>' +
+      '<button class="btn sm ghost" data-act="ly" data-v="-1">‹ ' + (y - 1) + '</button><button class="btn sm ghost" data-act="ly" data-v="1">' + (y + 1) + ' ›</button></div>' +
+      '<div class="twrap"><table class="t"><thead><tr><th>Άτομο</th><th class="n">Δικαίωμα</th><th class="n">Μεταφορά</th><th class="n">Ληφθείσες</th><th class="n">Προγραμμ.</th><th class="n">Υπόλοιπο</th><th style="min-width:120px"></th><th class="n">Άλλες απουσίες (ημ.)</th></tr></thead><tbody>' +
+      cfg.staff.map(function (s) {
+        var b = leaveBalance(s.id, y), tot = Math.max(1, b.ent + b.carry);
+        return '<tr><td>' + chip(s) + ' ' + esc(s.name || '') + '</td><td class="n">' + b.ent + '</td><td class="n">' + b.carry + '</td><td class="n">' + b.taken + '</td><td class="n">' + b.planned + '</td>' +
+          '<td class="n" style="font-weight:700;color:' + (b.left < 0 ? 'var(--danger)' : 'var(--ink)') + '">' + b.left + '</td>' +
+          '<td><div class="meter" title="Χρησιμοποιήθηκαν ή προγραμματίστηκαν ' + (b.taken + b.planned) + ' από ' + (b.ent + b.carry) + '"><i style="width:' + Math.min(100, b.taken / tot * 100) + '%;background:' + esc(s.color) + '"></i><i style="left:' + Math.min(100, b.taken / tot * 100) + '%;width:' + Math.max(0, Math.min(100 - b.taken / tot * 100, b.planned / tot * 100)) + '%;background:' + esc(s.color) + ';opacity:.4"></i></div></td>' +
+          '<td class="n">' + b.other + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+    var list = cfg.leaves.filter(function (l) { return (l.from || '').slice(0, 4) == y || (l.to || '').slice(0, 4) == y; })
+      .sort(function (a, b) { return a.from < b.from ? -1 : 1; });
+    h += '<section class="card"><div class="hd"><h2>Καταχωρισμένες ' + y + '</h2><span class="sub">' + list.length + '</span></div>';
+    if (!list.length) h += '<div class="bd help">Δεν υπάρχουν καταχωρίσεις για το ' + y + '.</div>';
+    else h += '<div class="twrap"><table class="t"><thead><tr><th>Από</th><th>Έως</th><th>Άτομο</th><th>Τύπος</th><th class="n">Ημέρες</th><th>Σημείωση</th><th></th></tr></thead><tbody>' +
+      list.map(function (l) {
+        var s = staffById(l.staffId), t = types[l.type] || { name: '?' };
+        var n = t.deduct ? leaveDays(l.from, l.to || l.from, cfg.leaveCount) : leaveDays(l.from, l.to || l.from, 'calendar');
+        return '<tr><td class="mono">' + esc(fmtD(l.from)) + '</td><td class="mono">' + esc(fmtD(l.to || l.from)) + '</td><td>' + (s ? chip(s) : '—') + '</td><td><span class="row" style="gap:6px"><span class="dot" style="color:' + esc(t.color || '#888') + '"></span>' + esc(t.name) + '</span></td><td class="n">' + n + '</td><td>' + esc(l.note || '') + '</td>' +
+          '<td style="text-align:right"><button class="btn sm ghost danger" data-act="delleave" data-id="' + l.id + '">Διαγραφή</button></td></tr>';
+      }).join('') + '</tbody></table></div>';
+    return h + '</section>';
+  }
+  function fmtD(s) { var a = String(s).split('-'); return a[2] + '/' + a[1] + '/' + a[0]; }
+
+  // ----- rules -----
+  function coverageInfo(w) {
+    var cov = new Array(24 * 4).fill(0);
+    store.cfg.shifts.forEach(function (s) {
+      var r = reqFor(s, w); if (!r) return;
+      var g = E.shiftGeom(s);
+      for (var t = g.start; t < g.end; t += 15) cov[Math.floor((t % 1440) / 15)] += r;
+    });
+    var gaps = [], i = 0;
+    while (i < cov.length) {
+      if (cov[i] === 0) { var j = i; while (j < cov.length && cov[j] === 0) j++; gaps.push(tm(i * 15) + '–' + tm(j * 15)); i = j; } else i++;
+    }
+    return gaps;
+  }
+  function tm(min) { return E.pad(Math.floor(min / 60) % 24 === 0 && min === 1440 ? 24 : Math.floor(min / 60)) + ':' + E.pad(min % 60); }
+  function capacity() {
+    var need = 0;
+    store.cfg.shifts.forEach(function (s) { var g = E.shiftGeom(s); for (var w = 0; w < 7; w++) need += g.hours * reqFor(s, w); });
+    var tgt = 0, mx = 0, hardT = 0;
+    store.cfg.staff.forEach(function (s) { if (s.active === false) return; tgt += +s.weeklyTarget || 0; mx += +s.weeklyMax || 0; if (s.targetHard) hardT += +s.weeklyTarget || 0; });
+    return { need: need, tgt: tgt, mx: mx, hardT: hardT };
+  }
+
+  // necessary conditions for the selected month (if one fails, no roster can satisfy every rule)
+  function feasibility() {
+    var P = problem(), cfg = store.cfg, D = P.D;
+    var nightDemand = 0;
+    for (var d = 0; d < D; d++) P.shifts.forEach(function (s, si) { if (P.night[si]) nightDemand += reqFor(cfg.shifts[si], P.dow[d]); });
+    var minSum = 0, maxSum = 0, unlimited = false, active = 0;
+    cfg.staff.forEach(function (st, pi) {
+      if (st.active === false) return;
+      active++;
+      var canN = P.allowed[pi].some(function (v, si) { return v > 0 && P.night[si]; });
+      if (!canN) return;
+      minSum += P.minN[pi] || 0;
+      if (P.maxN[pi] == null) unlimited = true; else maxSum += P.maxN[pi];
+    });
+    var nightMsgs = [];
+    if (minSum > nightDemand) nightMsgs.push('Τα ελάχιστα νυχτών (' + minSum + ') ξεπερνούν τις νύχτες του μήνα (' + nightDemand + ').');
+    if (!unlimited && maxSum < nightDemand) nightMsgs.push('Τα μέγιστα νυχτών (' + maxSum + ') δεν φτάνουν για τις ' + nightDemand + ' νύχτες του μήνα.');
+    var W = P.weekends.length, maxOff = 0, per = [];
+    P.weekends.forEach(function (w) {
+      var sat = 0, sun = 0, friN = 0;
+      cfg.shifts.forEach(function (s, si) {
+        sat += reqFor(s, 6); sun += reqFor(s, 0);
+        if (P.night[si]) friN += reqFor(s, 5);
+      });
+      maxOff += Math.max(0, active - Math.max(sat, sun, friN));
+    });
+    var asked = 0, wkMsgs = [];
+    cfg.staff.forEach(function (st) {
+      if (st.active === false) return;
+      var k = Math.floor(+st.weekendsOff || 0);
+      if (k > W) wkMsgs.push(st.code + ' ζητά ' + k + ' ελεύθερα ΣΚ, αλλά ο μήνας έχει ' + W + '.');
+      asked += Math.min(k, W);
+    });
+    if (asked > maxOff) wkMsgs.push('Ζητούνται ' + asked + ' ελεύθερα ΣΚ συνολικά, αλλά με την κάλυψη που χρειάζεται χωράνε το πολύ ' + maxOff + '.');
+    return { nightDemand: nightDemand, minSum: minSum, maxSum: unlimited ? '∞' : maxSum, W: W, asked: asked, maxOff: maxOff, msgs: nightMsgs.concat(wkMsgs), nightOk: !nightMsgs.length, wkOk: !wkMsgs.length };
+  }
+  function viewRules() {
+    var cfg = store.cfg, R = cfg.rules, Wt = cfg.weights;
+    // shifts + coverage
+    var h = '<div class="cols">';
+    h += '<section class="card" style="grid-column:1/-1"><div class="hd"><h2>Βάρδιες και κάλυψη</h2><span class="sub">πόσα άτομα χρειάζεται κάθε βάρδια ανά μέρα της εβδομάδας</span><span class="sp"></span><button class="btn sm" data-act="addshift">+ Βάρδια</button></div>' +
+      '<div class="twrap"><table class="t req"><thead><tr><th></th><th>Κωδ.</th><th>Όνομα</th><th>Έναρξη</th><th>Λήξη</th><th class="n">Ώρες</th>' + WEEK_ORDER.map(function (w) { return '<th class="n">' + WD[w] + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
+      cfg.shifts.map(function (s) {
+        var g = E.shiftGeom(s);
+        return '<tr><td><input type="color" value="' + esc(s.color || '#888888') + '" data-f="shift" data-id="' + s.id + '" data-k="color" aria-label="Χρώμα βάρδιας"></td>' +
+          '<td><input type="text" value="' + esc(s.code) + '" data-f="shift" data-id="' + s.id + '" data-k="code" maxlength="3" style="width:46px;text-align:center"></td>' +
+          '<td><input type="text" value="' + esc(s.name) + '" data-f="shift" data-id="' + s.id + '" data-k="name" style="width:120px"></td>' +
+          '<td><input type="time" value="' + esc(s.start) + '" data-f="shift" data-id="' + s.id + '" data-k="start"></td>' +
+          '<td><input type="time" value="' + esc(s.end) + '" data-f="shift" data-id="' + s.id + '" data-k="end"></td>' +
+          '<td class="n">' + g.hours + (g.night ? ' <span class="help">νύχτα</span>' : '') + '</td>' +
+          WEEK_ORDER.map(function (w) { return '<td class="n"><input type="number" min="0" max="20" value="' + reqFor(s, w) + '" data-f="req" data-id="' + s.id + '" data-w="' + w + '" aria-label="' + esc(s.name + ' ' + WD_LONG[w]) + '"></td>'; }).join('') +
+          '<td><button class="btn sm ghost danger" data-act="delshift" data-id="' + s.id + '">Διαγραφή</button></td></tr>';
+      }).join('') + '</tbody></table></div><div class="bd cov">';
+    // coverage bar for Monday
+    var bar = '<div class="covbar">';
+    cfg.shifts.forEach(function (s) {
+      var g = E.shiftGeom(s), r = reqFor(s, 1); if (!r) return;
+      var segs = g.end > 1440 ? [[g.start, 1440], [0, g.end - 1440]] : [[g.start, g.end]];
+      segs.forEach(function (sg) {
+        bar += '<i style="left:' + (sg[0] / 1440 * 100) + '%;width:calc(' + ((sg[1] - sg[0]) / 1440 * 100) + '% - 2px);background:' + esc(s.color || '#888') + ';color:' + inkOn(s.color || '#888') + '">' + esc(s.code) + (r > 1 ? '×' + r : '') + '</i>';
+      });
+    });
+    bar += '</div><div class="covaxis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>';
+    var gapTxt = [];
+    WEEK_ORDER.forEach(function (w) { var g = coverageInfo(w); if (g.length) gapTxt.push(WD_LONG[w] + ': ' + g.join(', ')); });
+    h += '<div class="help">24ωρη κάλυψη (Δευτέρα)</div>' + bar +
+      (gapTxt.length ? '<div class="pill warn" style="justify-self:start">Ακάλυπτα διαστήματα · ' + esc(gapTxt.join(' · ')) + '</div>' : '<div class="pill ok" style="justify-self:start"><span class="dot"></span>Το 24ωρο καλύπτεται κάθε μέρα</div>') +
+      '</div></section>';
+    // capacity
+    var cap = capacity();
+    var capPill = cap.need > cap.mx ? '<span class="pill bad">Δεν επαρκεί το προσωπικό</span>' : cap.hardT > cap.need ? '<span class="pill bad">Οι υποχρεωτικοί στόχοι ξεπερνούν τις ώρες που χρειάζονται</span>' : cap.need > cap.tgt ? '<span class="pill warn">Θα χρειαστούν ώρες πάνω από τους στόχους</span>' : '<span class="pill ok">Επαρκεί</span>';
+    h += '<section class="card"><div class="hd"><h2>Χωρητικότητα</h2>' + capPill + '</div><div class="kpis"><div><b>' + cap.need + '</b><span>ώρες/εβδ. που χρειάζονται</span></div><div><b>' + cap.tgt + '</b><span>άθροισμα στόχων</span></div><div><b>' + cap.mx + '</b><span>άθροισμα μεγίστων</span></div><div><b>' + cap.hardT + '</b><span>υποχρεωτικοί στόχοι</span></div></div>' +
+      '<div class="bd help">Αν οι ώρες που χρειάζονται ξεπερνούν το άθροισμα των στόχων, κάποιοι θα δουλέψουν πάνω από τον στόχο τους. Αν ξεπερνούν και τα μέγιστα, δεν υπάρχει πρόγραμμα χωρίς παραβάσεις. Το ίδιο ισχύει αν οι υποχρεωτικοί στόχοι είναι περισσότεροι από τις ώρες που χρειάζονται, γιατί δεν υπάρχουν αρκετές βάρδιες για όλους.</div></section>';
+    var fz = feasibility();
+    h += '<section class="card"><div class="hd"><h2>Εφικτότητα · ' + MONTHS[ui.m - 1] + ' ' + ui.y + '</h2>' + (fz.msgs.length ? '<span class="pill bad">Δεν υπάρχει λύση χωρίς παραβάσεις</span>' : '<span class="pill ok">Οι απαιτήσεις χωράνε</span>') + '</div>' +
+      '<div class="kpis"><div><b>' + fz.nightDemand + '</b><span>νύχτες τον μήνα</span></div><div><b>' + fz.minSum + '–' + fz.maxSum + '</b><span>ελάχιστα–μέγιστα νυχτών προσωπικού</span></div>' +
+      '<div><b>' + fz.asked + ' / ' + fz.maxOff + '</b><span>ελεύθερα ΣΚ που ζητούνται / που χωράνε (' + fz.W + ' ΣΚ)</span></div></div>' +
+      (fz.msgs.length ? '<ul style="margin:10px 14px;padding-left:18px;color:var(--danger)">' + fz.msgs.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' : '') +
+      '<div class="bd help">Εδώ ελέγχονται μαθηματικά οι απαιτήσεις του μήνα πριν την αυτόματη δημιουργία. Οι νύχτες του μήνα πρέπει να βρίσκονται ανάμεσα στο άθροισμα των ελαχίστων και των μεγίστων του προσωπικού. Κάθε ΣΚ πρέπει να δουλέψουν τουλάχιστον τόσα διαφορετικά άτομα όσες βάρδιες έχει το Σάββατο ή η Κυριακή, άρα ρεπό εκείνο το ΣΚ μπορούν να έχουν το πολύ όλοι οι υπόλοιποι. Αν κάτι εδώ βγει κόκκινο, κανένα πρόγραμμα δεν μπορεί να τηρήσει όλους τους κανόνες. Αν όλα είναι πράσινα, η λύση είναι πολύ πιθανή, αλλά όχι εγγυημένη, γιατί υπάρχουν και οι άλλοι κανόνες.</div></section>';
+    // hard rules
+    h += '<section class="card"><div class="hd"><h2>Υποχρεωτικοί κανόνες</h2></div><div class="bd" style="display:grid;gap:14px">' +
+      '<div class="row"><label class="f">Μέγιστες συνεχόμενες νύχτες<input type="number" min="1" max="14" value="' + esc(R.maxConsecNights) + '" data-f="rule" data-k="maxConsecNights"></label>' +
+      '<label class="f">Μέγιστες συνεχόμενες μέρες εργασίας<input type="number" min="1" max="14" value="' + esc(R.maxConsecDays) + '" data-f="rule" data-k="maxConsecDays"></label></div>' +
+      '<div><div class="help" style="margin-bottom:6px">Απαγορευμένες διαδοχές (βάρδια μιας μέρας → βάρδια της επόμενης). Δίπλα φαίνονται οι ώρες ανάπαυσης.</div><div class="twrap"><table class="matrix"><thead><tr><th>Από \\ Προς</th>' +
+      cfg.shifts.map(function (s) { return '<th>' + esc(s.name) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      cfg.shifts.map(function (a) {
+        return '<tr><th>' + esc(a.name) + '</th>' + cfg.shifts.map(function (b) {
+          var k = a.id + '>' + b.id, rest = E.restHours(a, b);
+          return '<td><label><input type="checkbox" data-f="forbid" data-k="' + k + '"' + ((R.forbid || {})[k] ? ' checked' : '') + '><small>' + (rest < 0 ? 'επικάλυψη' : rest + 'ώ') + '</small></label></td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div></div>' +
+      '<div class="help">Επίσης πάντα ισχύει: μία βάρδια τη μέρα ανά άτομο, όχι βάρδια σε άδεια, σε μη διαθέσιμη μέρα ή σε βάρδια «Ποτέ», και όχι πάνω από το εβδομαδιαίο μέγιστο ωρών.</div></div></section>';
+    // dependencies
+    var types = [['avoid', 'να μη δουλεύουν την ίδια μέρα με'], ['requires', 'δουλεύει μόνο όταν δουλεύει και'], ['prefer', 'προτιμάται να δουλεύει την ίδια μέρα με']];
+    var opt = function (id) { return cfg.staff.map(function (s) { return '<option value="' + s.id + '"' + (s.id === id ? ' selected' : '') + '>' + esc(s.code) + '</option>'; }).join(''); };
+    h += '<section class="card"><div class="hd"><h2>Εξαρτήσεις μεταξύ ατόμων</h2></div><div class="bd" style="display:grid;gap:12px">' +
+      '<div class="row"><select id="pr_a">' + opt(cfg.staff[0] && cfg.staff[0].id) + '</select><select id="pr_t">' + types.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select><select id="pr_b">' + opt(cfg.staff[1] && cfg.staff[1].id) + '</select><button class="btn" data-act="addpair">Προσθήκη</button></div>' +
+      (cfg.pairs.length ? '<ul class="issues" style="border:1px solid var(--line);border-radius:8px">' + cfg.pairs.map(function (r, i) {
+        var a = staffById(r.a), b = staffById(r.b), t = types.find(function (x) { return x[0] === r.type; });
+        if (!a || !b || !t) return '';
+        return '<li style="cursor:default">' + chip(a) + '<span style="flex:1">' + t[1] + '</span>' + chip(b) + (r.type === 'prefer' ? '<span class="pill warn">προτίμηση</span>' : '<span class="pill bad">υποχρεωτικό</span>') + '<button class="btn sm ghost danger" data-act="delpair" data-i="' + i + '">✕</button></li>';
+      }).join('') + '</ul>' : '<div class="help">Καμία εξάρτηση. Παράδειγμα: ένας νέος χειριστής «δουλεύει μόνο όταν δουλεύει και» ένας έμπειρος.</div>') +
+      '</div></section>';
+    // weights
+    var ws = [['hours', 'Να πιάνει τον στόχο ωρών'], ['nights', 'Δίκαιη κατανομή νυχτών'], ['weekend', 'Δίκαιη κατανομή Σαββατοκύριακων'], ['holiday', 'Δίκαιη κατανομή αργιών'], ['frag', 'Να αποφεύγονται μεμονωμένα ρεπό'], ['rot', 'Σταθερότητα βάρδιας σε συνεχόμενες μέρες'], ['pref', 'Σεβασμός «αν γίνεται όχι»'], ['wish', 'Σεβασμός επιθυμιών ρεπό'], ['pair', 'Προτιμήσεις ζευγαριών'], ['change', 'Λίγες αλλαγές στη «Διόρθωση»']];
+    h += '<section class="card"><div class="hd"><h2>Προτεραιότητες</h2><span class="sub">0 = αδιάφορο, 10 = πολύ σημαντικό</span></div><div class="bd" style="display:grid;gap:8px">' +
+      ws.map(function (w) {
+        var v = w[0] === 'change' ? Math.round((+Wt.change || 0) / 5) : +Wt[w[0]] || 0;
+        return '<div class="slider"><label for="w_' + w[0] + '">' + w[1] + '</label><input type="range" id="w_' + w[0] + '" min="0" max="10" step="1" value="' + v + '" data-f="weight" data-k="' + w[0] + '"><output id="o_' + w[0] + '">' + v + '</output></div>';
+      }).join('') +
+      '<label class="row" style="gap:8px;margin-top:6px"><input type="checkbox" data-f="usehist"' + (Wt.useHistory !== false ? ' checked' : '') + '> Η δικαιοσύνη μετράει και τους προηγούμενους 12 μήνες (όποιος έκανε περισσότερες νύχτες πριν, παίρνει λιγότερες τώρα)</label></div></section>';
+    return h + '</div>';
+  }
+
+  // ----- stats -----
+  function periodKeys() {
+    var keys = [];
+    if (ui.statsPeriod === 'month') keys.push(curKey());
+    else if (ui.statsPeriod === 'year') for (var m = 1; m <= 12; m++) keys.push(E.mkey(ui.y, m));
+    else { var ym = [ui.y, ui.m]; for (var i = 0; i < 12; i++) { keys.push(E.mkey(ym[0], ym[1])); ym = E.prevYM(ym[0], ym[1]); } }
+    return keys;
+  }
+  function viewStats() {
+    var cfg = store.cfg, keys = periodKeys(), acc = {}, monthsWithData = 0;
+    keys.forEach(function (k) {
+      var c = monthCounts(k); if (!c || !Object.keys(c).length) return; monthsWithData++;
+      Object.keys(c).forEach(function (id) {
+        var a = acc[id] || (acc[id] = { shifts: 0, hours: 0, nights: 0, weekend: 0, holiday: 0, by: {}, wd: [0, 0, 0, 0, 0, 0, 0] });
+        var x = c[id]; a.shifts += x.shifts; a.hours += x.hours; a.nights += x.nights; a.weekend += x.weekend; a.holiday += x.holiday;
+        Object.keys(x.by).forEach(function (s) { a.by[s] = (a.by[s] || 0) + x.by[s]; });
+        for (var w = 0; w < 7; w++) a.wd[w] += x.wd[w];
+      });
+    });
+    var people = cfg.staff.filter(function (s) { return s.active !== false || acc[s.id]; });
+    var tot = { nights: 0, weekend: 0, holiday: 0, hours: 0 }, tw = 0;
+    people.forEach(function (s) { var a = acc[s.id]; if (!a) return; tot.nights += a.nights; tot.weekend += a.weekend; tot.holiday += a.holiday; tot.hours += a.hours; });
+    people.forEach(function (s) { tw += +s.weeklyTarget || 0; });
+    function cell(s, k) {
+      var a = acc[s.id] || { nights: 0, weekend: 0, holiday: 0 }, exp = tw ? tot[k] * (+s.weeklyTarget || 0) / tw : 0, dv = a[k] - exp;
+      var mx = 1; people.forEach(function (p) { mx = Math.max(mx, (acc[p.id] || {})[k] || 0, tw ? tot[k] * (+p.weeklyTarget || 0) / tw : 0); });
+      return '<td class="n">' + a[k] + '</td><td style="min-width:90px"><div class="meter" title="' + a[k] + ' έναντι αναλογικού ' + exp.toFixed(1) + '"><i style="width:' + (a[k] / mx * 100) + '%;background:' + esc(s.color) + '"></i><b style="left:' + (exp / mx * 100) + '%"></b></div></td><td class="n"><span class="dev ' + (dv > 1.5 ? 'up' : dv < -1.5 ? 'dn' : '') + '">' + (dv >= 0 ? '+' : '') + dv.toFixed(1) + '</span></td>';
+    }
+    var lbl = ui.statsPeriod === 'month' ? MONTHS[ui.m - 1] + ' ' + ui.y : ui.statsPeriod === 'year' ? 'Έτος ' + ui.y : '12 μήνες έως ' + MONTHS[ui.m - 1] + ' ' + ui.y;
+    var h = '<section class="card"><div class="hd"><h2>Κατανομή φόρτου · ' + esc(lbl) + '</h2><span class="sub">' + monthsWithData + ' μήνες με πρόγραμμα</span><span class="sp"></span><div class="seg">' +
+      [['month', 'Μήνας'], ['year', 'Έτος'], ['12', '12 μήνες']].map(function (p) { return '<button data-act="sp" data-v="' + p[0] + '" aria-pressed="' + (ui.statsPeriod === p[0]) + '">' + p[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="bd help">Η κάθετη γραμμή δείχνει το <b>δίκαιο μερίδιο</b> κάθε ατόμου, αναλογικά με τις ώρες-στόχο του (ένας μερικής απασχόλησης αναλογεί σε λιγότερες νύχτες). Το ± δείχνει πόσο πάνω ή κάτω από αυτό είναι.</div>' +
+      '<div class="twrap"><table class="t"><thead><tr><th>Άτομο</th><th class="n">Βάρδιες</th><th class="n">Ώρες</th>' + cfg.shifts.map(function (s) { return '<th class="n">' + esc(s.code) + '</th>'; }).join('') +
+      '<th class="n">Νύχτες</th><th></th><th class="n">±</th><th class="n">ΣΚ</th><th></th><th class="n">±</th><th class="n">Αργίες</th><th></th><th class="n">±</th></tr></thead><tbody>' +
+      people.map(function (s) {
+        var a = acc[s.id] || { shifts: 0, hours: 0, by: {} };
+        return '<tr><td>' + chip(s) + ' ' + esc(s.name || '') + '</td><td class="n">' + a.shifts + '</td><td class="n">' + a.hours + '</td>' + cfg.shifts.map(function (sh) { return '<td class="n">' + (a.by[sh.id] || 0) + '</td>'; }).join('') +
+          cell(s, 'nights') + cell(s, 'weekend') + cell(s, 'holiday') + '</tr>';
+      }).join('') + '</tbody></table></div></section>';
+    // weekday distribution
+    var mx = 1; people.forEach(function (s) { var a = acc[s.id]; if (a) a.wd.forEach(function (v) { mx = Math.max(mx, v); }); });
+    h += '<section class="card"><div class="hd"><h2>Ποιος δουλεύει ποιες μέρες</h2><span class="sub">βάρδιες ανά ημέρα εβδομάδας</span></div><div class="twrap"><table class="t"><thead><tr><th>Άτομο</th>' + WEEK_ORDER.map(function (w) { return '<th class="n">' + WD[w] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      people.map(function (s) {
+        var a = acc[s.id] || { wd: [0, 0, 0, 0, 0, 0, 0] };
+        return '<tr><td>' + chip(s) + '</td>' + WEEK_ORDER.map(function (w) {
+          var v = a.wd[w], op = v / mx;
+          return '<td class="n" style="background:color-mix(in srgb,' + esc(s.color) + ' ' + Math.round(op * 55) + '%,transparent)">' + v + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div></section>';
+    return h;
+  }
+
+  // ----- settings -----
+  function viewSettings() {
+    var cfg = store.cfg, y = ui.y, hol = E.greekHolidays(y);
+    var h = '<div class="cols">';
+    h += '<section class="card"><div class="hd"><h2>Υπηρεσία</h2></div><div class="bd" style="display:grid;gap:8px"><label class="f">Όνομα υπηρεσίας (εμφανίζεται στο PDF)<input type="text" value="' + esc(cfg.orgName || '') + '" placeholder="π.χ. Κέντρο Λήψης Σημάτων" data-f="org"></label></div></section>';
+    h += '<section class="card"><div class="hd"><h2>Αργίες ' + y + '</h2></div><div class="bd" style="display:grid;gap:10px"><div class="twrap"><table class="t"><tbody>' +
+      Object.keys(hol).sort().map(function (d) { return '<tr><td class="mono">' + fmtD(d) + '</td><td>' + esc(hol[d]) + '</td><td class="help">επίσημη</td></tr>'; }).join('') +
+      cfg.customHolidays.map(function (x, i) { return '<tr><td class="mono">' + fmtD(x.date) + '</td><td>' + esc(x.name) + '</td><td style="text-align:right"><button class="btn sm ghost danger" data-act="delhol" data-i="' + i + '">Διαγραφή</button></td></tr>'; }).join('') +
+      '</tbody></table></div><div class="row"><input type="date" id="hol_d" value="' + E.ymd(y, ui.m, 1) + '"><input type="text" id="hol_n" placeholder="π.χ. Τοπική αργία"><button class="btn sm" data-act="addhol">Προσθήκη αργίας</button></div></div></section>';
+    h += '<section class="card"><div class="hd"><h2>Τύποι αδειών</h2><span class="sp"></span><button class="btn sm" data-act="addltype">+ Τύπος</button></div><div class="bd" style="display:grid;gap:12px">' +
+      '<label class="f">Οι μέρες άδειας μετρώνται ως<select data-f="leavecount">' + [['mon-fri', 'Εργάσιμες Δευτέρα–Παρασκευή'], ['mon-sat', 'Εργάσιμες Δευτέρα–Σάββατο'], ['calendar', 'Ημερολογιακές']].map(function (o) { return '<option value="' + o[0] + '"' + (cfg.leaveCount === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<div class="twrap"><table class="t"><thead><tr><th></th><th>Όνομα</th><th>Συντ.</th><th>Επίδραση</th><th>Από δικαίωμα</th><th></th></tr></thead><tbody>' +
+      cfg.leaveTypes.map(function (t) {
+        return '<tr><td><input type="color" value="' + esc(t.color || '#888888') + '" data-f="ltype" data-id="' + t.id + '" data-k="color"></td><td><input type="text" value="' + esc(t.name) + '" data-f="ltype" data-id="' + t.id + '" data-k="name" style="width:150px"></td>' +
+          '<td><input type="text" value="' + esc(t.code || '') + '" data-f="ltype" data-id="' + t.id + '" data-k="code" maxlength="3" style="width:46px"></td>' +
+          '<td><select data-f="ltype" data-id="' + t.id + '" data-k="mode">' + [['credit', 'Απουσία, μειώνει στόχο ωρών'], ['nocredit', 'Απουσία, δεν μειώνει στόχο'], ['wish', 'Μόνο αν γίνεται']].map(function (o) { return '<option value="' + o[0] + '"' + (t.mode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></td>' +
+          '<td><input type="checkbox" data-f="ltype" data-id="' + t.id + '" data-k="deduct" data-bool="1"' + (t.deduct ? ' checked' : '') + '></td>' +
+          '<td><button class="btn sm ghost danger" data-act="delltype" data-id="' + t.id + '">✕</button></td></tr>';
+      }).join('') + '</tbody></table></div></div></section>';
+    h += '<section class="card"><div class="hd"><h2>Δεδομένα</h2></div><div class="bd" style="display:grid;gap:12px">' +
+      (REMOTE ? '<div class="help">Όλα αποθηκεύονται αυτόματα στο <b>Google Sheet</b> σου (καρτέλες Προσωπικό, Άδειες, Πρόγραμμα, Ρυθμίσεις). Το Sheet κρατά ιστορικό εκδόσεων και ημερήσιο αντίγραφο 30 ημερών.</div>' +
+        '<div class="row">' + (R.sheetUrl ? '<a class="btn" href="' + esc(R.sheetUrl) + '" target="_blank" rel="noopener">Άνοιγμα Google Sheet</a>' : '') + '<button class="btn" data-act="logout">Αποσύνδεση</button></div>'
+        : '<div class="help">Όλα αποθηκεύονται αυτόματα. Κράτα κατά διαστήματα ένα αντίγραφο ασφαλείας.</div>') +
+      '<div class="row"><button class="btn" data-act="exportjson">Αντίγραφο ασφαλείας (JSON)</button><label class="btn" for="importfile">Επαναφορά από αντίγραφο</label><input type="file" id="importfile" accept=".json,application/json" hidden></div>' +
+      '<div class="row"><button class="btn" data-act="blank">Κενό ξεκίνημα</button><button class="btn danger" data-act="resetsample">Επαναφορά παραδείγματος</button></div>' +
+      '<div class="help">Το «Κενό ξεκίνημα» κρατά βάρδιες, κανόνες και τύπους αδειών και σβήνει προσωπικό, προγράμματα και άδειες.</div></div></section>';
+    return h + '</div>';
+  }
+
+  // ---------- actions ----------
+  function setCell(d, sid, k, pIdx) {
+    var P = problem();
+    pushUndo('αλλαγή βάρδιας');
+    var doc = ensureMonth(P.key), key = (d + 1) + '|' + sid, arr = (doc.cells[key] || []).slice();
+    while (arr.length <= k) arr.push(null);
+    var newId = pIdx >= 0 ? P.persons[pIdx].id : null;
+    if (newId) {
+      // remove from any other shift the same day
+      store.cfg.shifts.forEach(function (s) {
+        var kk = (d + 1) + '|' + s.id, a = doc.cells[kk];
+        if (!a || kk === key) return;
+        var i = a.indexOf(newId); if (i >= 0) a[i] = null;
+      });
+      var j = arr.indexOf(newId); if (j >= 0 && j !== k) arr[j] = null;
+    }
+    arr[k] = newId;
+    doc.cells[key] = arr;
+    trimDoc(doc);
+    markMonth(P.key);
+  }
+  function trimDoc(doc) {
+    Object.keys(doc.cells).forEach(function (k) {
+      var a = doc.cells[k]; while (a.length && a[a.length - 1] == null) a.pop(); if (!a.length) delete doc.cells[k];
+    });
+  }
+  function setPersonDay(pid, d, sid) {
+    var P = problem();
+    pushUndo('αλλαγή βάρδιας');
+    var doc = ensureMonth(P.key), displaced = null;
+    store.cfg.shifts.forEach(function (s) {
+      var a = doc.cells[(d + 1) + '|' + s.id]; if (!a) return;
+      for (var i = 0; i < a.length; i++) if (a[i] === pid) a[i] = null;
+    });
+    if (sid) {
+      var sh = shiftById(sid), req = reqFor(sh, E.dowOf(ui.y, ui.m, d + 1)), key = (d + 1) + '|' + sid;
+      var a = doc.cells[key] = doc.cells[key] || [];
+      var slot = -1;
+      for (var i = 0; i < Math.max(req, a.length); i++) if (!a[i]) { slot = i; break; }
+      if (slot < 0) { slot = 0; displaced = a[0]; }
+      while (a.length <= slot) a.push(null);
+      a[slot] = pid;
+    }
+    trimDoc(doc); markMonth(P.key);
+    if (displaced) { var st = staffById(displaced); toast((st ? st.code : 'Κάποιος') + ' αφαιρέθηκε από τη βάρδια και έμεινε ρεπό'); }
+  }
+
+  document.addEventListener('submit', function (e) { if (e.target && e.target.id === 'loginform') { e.preventDefault(); doLogin(); } });
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var act = t.getAttribute('data-act'), v = t.getAttribute('data-v');
+    var cfg = store.cfg;
+    switch (act) {
+      case 'tab': if (v === 'leaves' && ui.tab !== 'leaves') ui.leaveYear = ui.y; ui.tab = v; ui.sel = null; render(); window.scrollTo(0, 0); break;
+      case 'mprev': case 'mnext': {
+        var ym = act === 'mprev' ? E.prevYM(ui.y, ui.m) : E.nextYM(ui.y, ui.m); ui.y = ym[0]; ui.m = ym[1]; ui.leaveYear = ui.y; ui.sel = null; render(); break;
+      }
+      case 'view': ui.view = v; ui.sel = null; render(); break;
+      case 'cell': ui.sel = { d: +t.dataset.d, s: t.dataset.s, k: +t.dataset.k }; render(); break;
+      case 'pcell': ui.sel = { p: t.dataset.p, d: +t.dataset.d }; render(); break;
+      case 'closesel': ui.sel = null; render(); break;
+      case 'setcell': setCell(ui.sel.d, ui.sel.s, ui.sel.k, +t.dataset.p); render(); break;
+      case 'psetshift': setPersonDay(ui.sel.p, ui.sel.d, v); render(); break;
+      case 'lock': {
+        var doc = ensureMonth(curKey()), lk = (ui.sel.d + 1) + '|' + ui.sel.s + '|' + ui.sel.k;
+        if (doc.locks[lk]) delete doc.locks[lk]; else doc.locks[lk] = true;
+        markMonth(curKey()); render(); break;
+      }
+      case 'addslot': {
+        var P = problem(), doc2 = ensureMonth(P.key), key = (ui.sel.d + 1) + '|' + ui.sel.s, arr = doc2.cells[key] || [];
+        var sh = shiftById(ui.sel.s), n = Math.max(reqFor(sh, P.dow[ui.sel.d]), arr.length);
+        while (arr.length < n) arr.push(null);
+        // placeholder to create the extra slot: pick best candidate automatically
+        arr.push(null); doc2.cells[key] = arr;
+        var P2 = problem(); var ci = -1;
+        P2.cellsByDay[ui.sel.d].forEach(function (c) { var cc = P2.cells[c]; if (P2.shifts[cc.s].id === ui.sel.s && cc.k === n) ci = c; });
+        if (ci >= 0) {
+          var best = E.candidates(P2, P2.init, ci).filter(function (c) { return c.hardDelta <= 0 && !c.current; })[0];
+          pushUndo('επιπλέον άτομο');
+          arr[n] = best ? P2.persons[best.p].id : null;
+          if (!best) { arr.pop(); toast('Δεν υπάρχει διαθέσιμο άτομο χωρίς παράβαση'); }
+          else { ui.sel.k = n; toast('Προστέθηκε ' + P2.persons[best.p].code + ' ως επιπλέον άτομο'); }
+        } else arr.pop();
+        trimDoc(doc2); markMonth(P.key); render(); break;
+      }
+      case 'goissue': {
+        var cur = current(), x = cur.an.issues[+t.dataset.i]; if (!x) break;
+        if (x.c != null) { var c0 = cur.P.cells[x.c]; ui.view = 'shift'; ui.sel = { d: c0.d, s: cur.P.shifts[c0.s].id, k: c0.k }; }
+        else if (x.p >= 0 && x.d >= 0) {
+          var found = null;
+          cur.P.cellsByDay[x.d].forEach(function (c) { if (cur.P.init[c] === x.p) found = cur.P.cells[c]; });
+          if (found && ui.view === 'shift') ui.sel = { d: found.d, s: cur.P.shifts[found.s].id, k: found.k };
+          else { ui.view = 'person'; ui.sel = { p: cur.P.persons[x.p].id, d: x.d }; }
+        } else { ui.view = 'person'; ui.sel = null; }
+        render(); break;
+      }
+      case 'gen': startGen(v); break;
+      case 'errcat': { var F = ui.errF; F.cat = F.cat === v ? null : v; render(); break; }
+      case 'errsev': ui.errF.sev = v; render(); break;
+      case 'errp': { var F2 = ui.errF; F2.person = F2.person === +v ? null : +v; render(); break; }
+      case 'errclear': ui.errF = { sev: 'all', person: null, cat: null }; render(); break;
+      case 'genclose': ui.gen = null; render(); break;
+      case 'genapply': {
+        var r = ui.gen.results[+t.dataset.i]; pushUndo(ui.gen.mode === 'repair' ? 'διόρθωση' : 'αυτόματη δημιουργία');
+        writeAsg(problem(), r.asg); ui.gen = null; toast('Το πρόγραμμα ενημερώθηκε'); render(); break;
+      }
+      case 'undo': undo(); break;
+      case 'lockupto': {
+        var n2 = Math.max(1, Math.min(E.daysIn(ui.y, ui.m), +document.getElementById('lockupto').value || 1));
+        var P3 = problem(), doc3 = ensureMonth(P3.key);
+        P3.cells.forEach(function (c) { if (c.d < n2) doc3.locks[(c.d + 1) + '|' + P3.shifts[c.s].id + '|' + c.k] = true; });
+        markMonth(P3.key); toast('Κλειδώθηκαν οι μέρες 1–' + n2); render(); break;
+      }
+      case 'unlockall': ensureMonth(curKey()).locks = {}; markMonth(curKey()); render(); break;
+      case 'clearmonth': askConfirm('Να αδειάσουν όλες οι μη κλειδωμένες βάρδιες του ' + MONTHS_G[ui.m - 1] + ';', 'Άδειασμα', function () {
+        pushUndo('άδειασμα μήνα');
+        var doc4 = ensureMonth(curKey()), keep = {};
+        Object.keys(doc4.cells).forEach(function (k) {
+          doc4.cells[k] = doc4.cells[k].map(function (id, i) { return doc4.locks[k + '|' + i] ? id : null; });
+        });
+        trimDoc(doc4); markMonth(curKey());
+      }); break;
+      case 'cfyes': { var fn = ui.confirm.fn; ui.confirm = null; fn(); render(); break; }
+      case 'cfno': ui.confirm = null; render(); break;
+      case 'xlsx': exportXlsx(); break;
+      case 'pdf': exportPdf(); break;
+      case 'qleave': {
+        var ty = document.getElementById('qltype').value, dd = E.ymd(ui.y, ui.m, ui.sel.d + 1);
+        cfg.leaves.push({ id: uid('l'), staffId: ui.sel.p, type: ty, from: dd, to: dd, note: '' });
+        markCfg(); toast('Καταχωρίστηκε η απουσία'); render(); break;
+      }
+      // staff
+      case 'addstaff': {
+        var palette = ['#2F7F8F', '#B5485D', '#8A6D2B', '#4B6BD6', '#6A8F2F', '#A0522D', '#5D4B9E', '#2E8B57'];
+        var nid = uid('s');
+        cfg.staff.push({ id: nid, code: 'ΝΕ' + (cfg.staff.length + 1), name: '', color: palette[cfg.staff.length % palette.length], active: true, weeklyTarget: 40, weeklyMax: 48, shifts: {}, avail: {}, leaveEntitlement: 20, leaveCarry: 0, groupId: (cfg.groups && cfg.groups.length ? cfg.groups[cfg.groups.length - 1].id : null) });
+        markCfg(); render(); break;
+      }
+      case 'delstaff': {
+        var sid = t.dataset.id, st = staffById(sid);
+        askConfirm('Διαγραφή του ' + (st ? st.code : '') + '; Οι βάρδιες του στα αποθηκευμένα προγράμματα θα μείνουν κενές. Αν απλώς φεύγει προσωρινά, κάνε τον «ανενεργό».', 'Διαγραφή', function () {
+          cfg.staff = cfg.staff.filter(function (s) { return s.id !== sid; });
+          cfg.pairs = cfg.pairs.filter(function (r) { return r.a !== sid && r.b !== sid; });
+          cfg.leaves = cfg.leaves.filter(function (l) { return l.staffId !== sid; });
+          markCfg();
+        }); break;
+      }
+      case 'addgroup': {
+        var gp = ['#F2B45A', '#B07CFF', '#4FC3F7', '#FF8A65', '#9CCC65'];
+        cfg.groups = cfg.groups || [];
+        cfg.groups.push({ id: uid('g'), name: 'Νέα ομάδα', color: gp[cfg.groups.length % gp.length] }); markCfg(); render(); break;
+      }
+      case 'delgroup': {
+        var gid = t.dataset.id, gg = (cfg.groups || []).find(function (g) { return g.id === gid; });
+        askConfirm('Διαγραφή της ομάδας «' + (gg ? gg.name : '') + '»; Τα άτομά της θα μείνουν χωρίς ομάδα.', 'Διαγραφή', function () {
+          cfg.groups = cfg.groups.filter(function (g) { return g.id !== gid; });
+          cfg.staff.forEach(function (p) { if (p.groupId === gid) p.groupId = null; });
+          markCfg();
+        }); break;
+      }
+      case 'shpref': { var s1 = staffById(t.dataset.id); s1.shifts = s1.shifts || {}; s1.shifts[t.dataset.s] = v; markCfg(); render(); break; }
+      case 'avail': {
+        var s2 = staffById(t.dataset.id), w = t.dataset.w; s2.avail = s2.avail || {}; s2.avail[w] = s2.avail[w] || {};
+        s2.avail[w][t.dataset.s] = t.dataset.on === '1' ? false : true; markCfg(); render(); break;
+      }
+      // leaves
+      case 'addleave': {
+        var f = document.getElementById('lv_from').value, to = document.getElementById('lv_to').value || f;
+        if (!f) { toast('Συμπλήρωσε ημερομηνία «Από»'); break; }
+        if (to < f) { var tmp = f; f = to; to = tmp; }
+        cfg.leaves.push({ id: uid('l'), staffId: document.getElementById('lv_staff').value, type: document.getElementById('lv_type').value, from: f, to: to, note: document.getElementById('lv_note').value });
+        markCfg(); toast('Η άδεια καταχωρίστηκε. Αν συγκρούεται με βάρδιες, πάτα «Διόρθωση» στο Πρόγραμμα.'); render(); break;
+      }
+      case 'delleave': cfg.leaves = cfg.leaves.filter(function (l) { return l.id !== t.dataset.id; }); markCfg(); render(); break;
+      case 'ly': ui.leaveYear += +v; render(); break;
+      // rules
+      case 'addshift': {
+        var id = 'S' + Math.random().toString(36).slice(2, 6);
+        cfg.shifts.push({ id: id, code: 'Χ', name: 'Νέα βάρδια', start: '09:00', end: '17:00', required: [0, 0, 0, 0, 0, 0, 0], color: '#5B8C85' });
+        markCfg(); render(); break;
+      }
+      case 'delshift': {
+        var shid = t.dataset.id, sh2 = shiftById(shid);
+        askConfirm('Διαγραφή της βάρδιας «' + (sh2 ? sh2.name : '') + '»; Οι αναθέσεις της στα προγράμματα θα αγνοούνται.', 'Διαγραφή', function () {
+          cfg.shifts = cfg.shifts.filter(function (s) { return s.id !== shid; }); markCfg();
+        }); break;
+      }
+      case 'addpair': {
+        var a = document.getElementById('pr_a').value, b = document.getElementById('pr_b').value;
+        if (a === b) { toast('Διάλεξε δύο διαφορετικά άτομα'); break; }
+        cfg.pairs.push({ a: a, b: b, type: document.getElementById('pr_t').value }); markCfg(); render(); break;
+      }
+      case 'delpair': cfg.pairs.splice(+t.dataset.i, 1); markCfg(); render(); break;
+      case 'sp': ui.statsPeriod = v; render(); break;
+      // settings
+      case 'addhol': {
+        var hd = document.getElementById('hol_d').value; if (!hd) break;
+        cfg.customHolidays.push({ date: hd, name: document.getElementById('hol_n').value || 'Αργία' }); markCfg(); render(); break;
+      }
+      case 'delhol': cfg.customHolidays.splice(+t.dataset.i, 1); markCfg(); render(); break;
+      case 'addltype': cfg.leaveTypes.push({ id: uid('t'), name: 'Νέος τύπος', code: 'ΝΤ', mode: 'credit', deduct: false, color: '#5B8C85' }); markCfg(); render(); break;
+      case 'delltype': {
+        var tid = t.dataset.id;
+        if (cfg.leaves.some(function (l) { return l.type === tid; })) { toast('Υπάρχουν άδειες με αυτόν τον τύπο. Διάγραψέ τες πρώτα.'); break; }
+        cfg.leaveTypes = cfg.leaveTypes.filter(function (x) { return x.id !== tid; }); markCfg(); render(); break;
+      }
+      case 'logout': doLogout(); break;
+      case 'onboardsample': ui.onboard = false; store = migrate(makeSample()); dirtyCfg = true; queueSave(); render(); break;
+      case 'exportjson': saveFile('vardiologio-' + E.fmt(today) + '.json', JSON.stringify(store, null, 1)); break;
+      case 'resetsample': askConfirm('Να αντικατασταθούν όλα τα δεδομένα με το παράδειγμα; Κράτα πρώτα αντίγραφο ασφαλείας αν τα χρειάζεσαι.', 'Επαναφορά', function () {
+        store = migrate(makeSample()); undoStack = []; dirtyCfg = true; Object.keys(store.months).forEach(function (k) { dirtyMonths[k] = 1; }); queueSave();
+      }); break;
+      case 'blank': askConfirm('Να σβηστούν προσωπικό, προγράμματα και άδειες;', 'Κενό ξεκίνημα', function () {
+        var old = Object.keys(store.months);
+        store.cfg.staff = []; store.cfg.leaves = []; store.cfg.pairs = []; store.months = {}; undoStack = [];
+        old.forEach(function (k) { store.months[k] = { cells: {}, locks: {} }; dirtyMonths[k] = 1; });
+        markCfg();
+      }); break;
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    var t = e.target, f = t.getAttribute('data-f'), cfg = store.cfg;
+    if (t.id === 'importfile' || t.id === 'importfile2') { ui.onboard = false; importJson(t.files && t.files[0]); return; }
+    if (!f) return;
+    var val = t.getAttribute('data-bool') ? t.checked : t.getAttribute('data-opt') ? (t.value === '' ? null : Math.max(0, +t.value)) : t.getAttribute('data-num') ? +t.value : t.value;
+    if (f === 'staff') { var s = staffById(t.dataset.id); if (!s) return; s[t.dataset.k] = val; }
+    else if (f === 'group') { var gr = (cfg.groups || []).find(function (g) { return g.id === t.dataset.id; }); if (!gr) return; gr[t.dataset.k] = val; }
+    else if (f === 'shift') { var sh = shiftById(t.dataset.id); if (!sh) return; sh[t.dataset.k] = val; }
+    else if (f === 'req') {
+      var sh2 = shiftById(t.dataset.id); if (!sh2) return;
+      if (!Array.isArray(sh2.required) || sh2.required.length !== 7) { var r0 = +sh2.required || 0; sh2.required = [r0, r0, r0, r0, r0, r0, r0]; }
+      sh2.required[+t.dataset.w] = Math.max(0, Math.min(20, +t.value || 0));
+    }
+    else if (f === 'rule') cfg.rules[t.dataset.k] = Math.max(1, +t.value || 1);
+    else if (f === 'forbid') { cfg.rules.forbid = cfg.rules.forbid || {}; if (t.checked) cfg.rules.forbid[t.dataset.k] = true; else delete cfg.rules.forbid[t.dataset.k]; }
+    else if (f === 'weight') { var k = t.dataset.k; cfg.weights[k] = k === 'change' ? (+t.value) * 5 : +t.value; }
+    else if (f === 'usehist') cfg.weights.useHistory = t.checked;
+    else if (f === 'leavecount') cfg.leaveCount = t.value;
+    else if (f === 'org') cfg.orgName = t.value;
+    else if (f === 'ltype') { var lt = cfg.leaveTypes.find(function (x) { return x.id === t.dataset.id; }); if (!lt) return; lt[t.dataset.k] = val; }
+    else return;
+    markCfg(); render();
+  });
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (t.getAttribute('data-f') === 'weight') { var o = document.getElementById('o_' + t.dataset.k); if (o) o.textContent = t.value; }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if (ui.confirm) ui.confirm = null; else if (ui.sel) ui.sel = null; else if (ui.gen && ui.gen.results) ui.gen = null; else return; render(); }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('td[data-act]')) { e.preventDefault(); e.target.click(); }
+  });
+
+  function importJson(file) {
+    if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var s = JSON.parse(rd.result);
+        if (!s.cfg || !Array.isArray(s.cfg.staff)) throw new Error('bad');
+        store = migrate(s); undoStack = []; dirtyCfg = true; Object.keys(store.months).forEach(function (k) { dirtyMonths[k] = 1; }); queueSave();
+        toast('Τα δεδομένα επανήλθαν από το αντίγραφο'); render();
+      } catch (e) { toast('Το αρχείο δεν είναι αντίγραφο του Βαρδιολογίου'); }
+    };
+    rd.readAsText(file);
+  }
+  function saveFile(name, data) {
+    if (!downloads) {
+      // local file / normal browser: plain download link
+      try {
+        var blob = new Blob([data], { type: /\.json$/.test(name) ? 'application/json' : /\.pdf$/.test(name) ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      } catch (e) { toast('Η λήψη αρχείων δεν είναι διαθέσιμη σε αυτή την προβολή'); }
+      return Promise.resolve();
+    }
+    return downloads.save({ filename: name, data: data }).then(function () { }, function (e) {
+      if (e && e.code !== 'declined' && e.code !== 'cancelled') toast('Η λήψη δεν ολοκληρώθηκε');
+    });
+  }
+  function loadScript(src) {
+    return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  }
+
+  function dayRanges(days) {
+    var out = [], i = 0;
+    days.sort(function (a, b) { return a - b; });
+    while (i < days.length) {
+      var j = i; while (j + 1 < days.length && days[j + 1] === days[j] + 1) j++;
+      out.push(j - i >= 2 ? days[i] + '–' + days[j] : (j > i ? days[i] + ', ' + days[j] : '' + days[i]));
+      i = j + 1;
+    }
+    return out.join(', ');
+  }
+  function mixHex(hex, base, t) {
+    function p(h) { h = String(h || '#888').replace('#', ''); if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join(''); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }
+    var a = p(hex), b = p(base);
+    return '#' + a.map(function (v, i) { return ('0' + Math.round(b[i] + (v - b[i]) * t).toString(16)).slice(-2); }).join('');
+  }
+  function buildPdf() {
+    var cur = current(), P = cur.P, an = cur.an, cfg = store.cfg;
+    var BG = '#121212', CELL = '#1A1A1A', OFF = '#151515', LINE = '#2C2C2C', TXT = '#F4F4F4', MUT = '#8E8E8E', DIM = '#3C3C3C', ACC = '#1DCF8E', RED = '#FF6B6B';
+    var W = 841.89, H = 595.28;
+    var WDH = ['ΔΕΥ', 'ΤΡΙ', 'ΤΕΤ', 'ΠΕΜ', 'ΠΑΡ', 'ΣΑΒ', 'ΚΥΡ'];
+    var li = E.leaveIndex(cfg);
+    var ltypes = {}; cfg.leaveTypes.forEach(function (t) { ltypes[t.name] = t; });
+    function who(st) { return st ? (st.name || st.code) : ''; }
+    function card(stripe, top, main, sub, fill) {
+      var st = [{ text: top, fontSize: 6.6, color: '#BDBDBD' }, { text: main, fontSize: 9.2, bold: true, color: TXT, margin: [0, 1.5, 0, 0] }];
+      if (sub) st.push({ text: sub, fontSize: 6.4, color: '#A8A8A8', margin: [0, 1, 0, 0] });
+      return {
+        table: { widths: [2.5, '*'], body: [[{ text: '', fillColor: stripe }, { stack: st, fillColor: fill }]] },
+        layout: { hLineWidth: function () { return 0; }, vLineWidth: function () { return 0; },
+          paddingLeft: function (i) { return i === 0 ? 0 : 6; }, paddingRight: function (i) { return i === 0 ? 0 : 4; },
+          paddingTop: function () { return 4.5; }, paddingBottom: function () { return 4.5; } },
+        margin: [0, 0, 0, 3]
+      };
+    }
+    function titleBlock(sub) {
+      var usedG = (cfg.groups || []).filter(function (g) { return cfg.staff.some(function (s) { return s.active !== false && s.groupId === g.id; }); });
+      var items = usedG.length ? usedG.map(function (g) { return { color: g.color, label: g.name }; })
+        : cfg.staff.filter(function (s) { return s.active !== false; }).map(function (s) { return { color: s.color, label: who(s) }; });
+      if (usedG.length && cfg.staff.some(function (s) { return s.active !== false && !groupOf(s); })) items.push({ color: '#8E8E8E', label: 'Χωρίς ομάδα' });
+      var legend = items.map(function (it) {
+        return { columns: [{ canvas: [{ type: 'rect', x: 0, y: 2, w: 7, h: 7, r: 1.5, color: it.color }], width: 11 }, { text: it.label, fontSize: 7.5, color: '#CFCFCF', width: 'auto' }], width: 'auto', columnGap: 0 };
+      });
+      return { columns: [
+        { width: '*', stack: [
+          { text: (cfg.orgName || 'Πρόγραμμα υπηρεσιών').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), fontSize: 7.5, bold: true, color: MUT, characterSpacing: 2 },
+          { text: [{ text: MONTHS[ui.m - 1] + ' ', color: TXT }, { text: String(ui.y), color: ACC }], fontSize: 24, bold: true, margin: [0, 2, 0, 2] },
+          { text: sub, fontSize: 7.5, color: MUT }
+        ] },
+        { width: 'auto', stack: [{ columns: legend, columnGap: 12, width: 'auto' }, { text: cfg.shifts.map(function (s) { return s.name + ' ' + s.start + '–' + s.end; }).join('    '), fontSize: 7, color: MUT, alignment: 'right', margin: [0, 8, 0, 0] }], margin: [0, 14, 0, 0] }
+      ], margin: [0, 0, 0, 12] };
+    }
+    function dayCell(date) {
+      var inMonth = date.getMonth() + 1 === ui.m && date.getFullYear() === ui.y, dnum = date.getDate();
+      if (!inMonth) return { stack: [{ text: String(dnum).padStart(2, '0'), fontSize: 12, bold: true, color: DIM }], fillColor: OFF };
+      var d = dnum - 1, stack = [];
+      var head = { columns: [{ text: String(dnum).padStart(2, '0'), fontSize: 12, bold: true, color: P.weekend[d] ? ACC : TXT, width: 'auto' }], margin: [0, 0, 0, 5] };
+      if (P.holiday[d]) head.columns.push({ text: P.holidayName[d], fontSize: 6.3, color: ACC, bold: true, alignment: 'right', margin: [0, 4, 0, 0] });
+      stack.push(head);
+      cfg.shifts.forEach(function (s, si) {
+        P.cellsByDay[d].forEach(function (c) {
+          if (P.cells[c].s !== si) return;
+          var pi = P.init[c], tm = s.start + ' – ' + s.end;
+          if (pi < 0) { if (P.cells[c].req) stack.push(card(RED, tm, 'Ακάλυπτη', s.name, '#2A1717')); return; }
+          var st = staffById(P.persons[pi].id), g = groupOf(st), col = g ? g.color : st.color;
+          stack.push(card(col, tm, who(st), g ? g.name : s.name, mixHex(col, '#1E1E1E', 0.32)));
+        });
+      });
+      cfg.staff.forEach(function (st) {
+        var e = li[st.id + '|' + E.ymd(ui.y, ui.m, dnum)];
+        if (!e || e.kind === 3) return;
+        var t = ltypes[e.type];
+        stack.push(card(t && t.color ? t.color : RED, e.type, who(st), null, '#202020'));
+      });
+      return { stack: stack, fillColor: CELL };
+    }
+    // weeks
+    var first = new Date(ui.y, ui.m - 1, 1 - P.weekOffset), weeks = [];
+    for (var w = 0; w < 6; w++) {
+      var row = [];
+      for (var k = 0; k < 7; k++) { var dt = new Date(first); dt.setDate(first.getDate() + w * 7 + k); row.push(dt); }
+      if (row[0].getMonth() + 1 !== ui.m && w > 0 && row[0] > new Date(ui.y, ui.m - 1, 1)) break;
+      weeks.push(row);
+    }
+    var content = [];
+    for (var ch = 0; ch < weeks.length; ch += 2) {
+      var part = weeks.slice(ch, ch + 2);
+      var from = part[0].find(function (x) { return x.getMonth() + 1 === ui.m; }), lastW = part[part.length - 1], to = lastW.slice().reverse().find(function (x) { return x.getMonth() + 1 === ui.m; });
+      var body = [WDH.map(function (n, i) { return { text: n, fontSize: 7, bold: true, characterSpacing: 1.6, color: i >= 5 ? ACC : MUT, fillColor: BG, margin: [0, 0, 0, 2] }; })];
+      part.forEach(function (wk) { body.push(wk.map(dayCell)); });
+      var block = [titleBlock('Ημέρες ' + from.getDate() + '–' + to.getDate() + ' ' + MONTHS_G[ui.m - 1]),
+        { table: { headerRows: 1, widths: ['*', '*', '*', '*', '*', '*', '*'], body: body, dontBreakRows: true },
+          layout: {
+            hLineWidth: function (i) { return i === 0 ? 0 : 1; }, vLineWidth: function (i, node) { return i === 0 || i === node.table.widths.length ? 0 : 1; },
+            hLineColor: function () { return BG; }, vLineColor: function () { return BG; },
+            paddingLeft: function () { return 5; }, paddingRight: function () { return 5; },
+            paddingTop: function (i) { return i === 0 ? 0 : 6; }, paddingBottom: function (i) { return i === 0 ? 0 : 5; }
+          } }];
+      content.push(ch === 0 ? { stack: block } : { stack: block, pageBreak: 'before' });
+    }
+    // per-person page
+    var cards = [];
+    var gOrder = {}; (cfg.groups || []).forEach(function (g, i) { gOrder[g.id] = i; });
+    P.persons.map(function (p, pi) { return pi; }).sort(function (a, b) {
+      var ga = gOrder[staffById(P.persons[a].id).groupId], gb = gOrder[staffById(P.persons[b].id).groupId];
+      return (ga == null ? 99 : ga) - (gb == null ? 99 : gb) || a - b;
+    }).forEach(function (pi) {
+      var p = P.persons[pi];
+      var st = staffById(p.id), x = an.per[pi], grp = groupOf(st), gcol = grp ? grp.color : st.color;
+      if (!P.active[pi] && !x.hours) return;
+      var byShift = cfg.shifts.map(function () { return []; });
+      for (var d2 = 0; d2 < P.D; d2++) P.cellsByDay[d2].forEach(function (c) { if (P.init[c] === pi) byShift[P.cells[c].s].push(d2 + 1); });
+      var lv = {};
+      for (var d3 = 0; d3 < P.D; d3++) { var k2 = P.leave[pi * P.D + d3]; if (k2 === 1 || k2 === 2) (lv[P.leaveName[pi * P.D + d3]] = lv[P.leaveName[pi * P.D + d3]] || []).push(d3 + 1); }
+      var lines = cfg.shifts.map(function (s, si) { return { columns: [{ text: s.name, width: 58, color: MUT, fontSize: 8 }, { text: byShift[si].length ? dayRanges(byShift[si]) : '—', fontSize: 8, color: TXT }], margin: [0, 1.5, 0, 0] }; });
+      Object.keys(lv).forEach(function (k) { lines.push({ columns: [{ text: k, width: 58, color: MUT, fontSize: 8 }, { text: dayRanges(lv[k]), fontSize: 8, color: TXT }], margin: [0, 1.5, 0, 0] }); });
+      var kp = [[x.hours, 'ώρες'], [x.nights, 'νύχτες'], [x.weekend, 'ΣΚ'], [x.holiday, 'αργίες']].map(function (q) {
+        return { stack: [{ text: String(q[0]), fontSize: 13, bold: true, color: TXT }, { text: q[1], fontSize: 6.5, color: MUT }], width: 'auto' };
+      });
+      cards.push({ unbreakable: true, margin: [0, 0, 0, 10], table: { widths: [3, '*'], body: [[{ text: '', fillColor: gcol }, { fillColor: '#1C1C1C', stack: [
+        { text: [{ text: who(st), bold: true, fontSize: 11, color: TXT }, { text: st.name ? '  ' + st.code : '', fontSize: 8, color: MUT }, { text: grp ? '   ' + grp.name.toUpperCase() : '', fontSize: 7, bold: true, color: gcol, characterSpacing: 1 }] },
+        { columns: kp, columnGap: 16, margin: [0, 6, 0, 6] }
+      ].concat(lines) }]] }, layout: { hLineWidth: function () { return 0; }, vLineWidth: function () { return 0; }, paddingLeft: function (i) { return i ? 10 : 0; }, paddingRight: function (i) { return i ? 10 : 0; }, paddingTop: function () { return 9; }, paddingBottom: function () { return 9; } } });
+    });
+    var cols = [[], [], []];
+    cards.forEach(function (c, i) { cols[i % 3].push(c); });
+    content.push({ stack: [titleBlock('Ανά εργαζόμενο · οι αριθμοί είναι ημέρες του μήνα'), { columns: cols.map(function (c) { return { stack: c }; }), columnGap: 12 }], pageBreak: 'before' });
+    var created = E.fmt(today).split('-').reverse().join('/');
+    return {
+      pageSize: 'A4', pageOrientation: 'landscape', pageMargins: [26, 24, 26, 30],
+      info: { title: 'Πρόγραμμα ' + MONTHS[ui.m - 1] + ' ' + ui.y },
+      background: function () { return { canvas: [{ type: 'rect', x: 0, y: 0, w: W, h: H, color: BG }] }; },
+      defaultStyle: { font: 'Roboto', fontSize: 8.5, color: TXT, lineHeight: 1.08 },
+      footer: function (page, pages) {
+        return { margin: [26, 8, 26, 0], columns: [
+          { text: [{ text: '■ ', color: ACC }, { text: 'Βαρδιολόγιο · ' + created, color: MUT }], fontSize: 6.5 },
+          { text: page + ' / ' + pages, fontSize: 6.5, color: MUT, alignment: 'right' }
+        ] };
+      },
+      content: content
+    };
+  }
+  function exportPdf() {
+    toast('Ετοιμάζεται το PDF…');
+    var base = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/';
+    (window.pdfMake && window.pdfMake.vfs ? Promise.resolve() : loadScript(base + 'pdfmake.min.js').then(function () { return loadScript(base + 'vfs_fonts.js'); }))
+      .then(function () {
+        var dd = buildPdf();
+        return new Promise(function (res) { window.pdfMake.createPdf(dd).getBuffer(function (buf) { res(buf); }); });
+      }).then(function (buf) {
+        return saveFile('Προγραμμα_' + curKey() + '.pdf', buf);
+      }).catch(function () { toast('Δεν φορτώθηκε η βιβλιοθήκη PDF. Έλεγξε τη σύνδεση και δοκίμασε ξανά.'); });
+  }
+  window.__buildPdf = buildPdf;
+  function exportXlsx() {
+    toast('Ετοιμάζεται το Excel…');
+    (window.ExcelJS ? Promise.resolve() : loadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js')).then(function () {
+      var cur = current(), P = cur.P, an = cur.an, X = window.ExcelJS;
+      var wb = new X.Workbook();
+      function fill(hex) { return { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + String(hex || '#FFFFFF').replace('#', '').toUpperCase() } }; }
+      function fontOn(hex) { return { bold: true, color: { argb: inkOn(hex) === '#FFFFFF' ? 'FFFFFFFF' : 'FF15191E' } }; }
+      var border = { top: { style: 'thin', color: { argb: 'FFBFC6CE' } }, left: { style: 'thin', color: { argb: 'FFBFC6CE' } }, bottom: { style: 'thin', color: { argb: 'FFBFC6CE' } }, right: { style: 'thin', color: { argb: 'FFBFC6CE' } } };
+      var title = (MONTHS[ui.m - 1] + ' ' + ui.y).toUpperCase();
+      // sheet 1 by shift
+      var ws = wb.addWorksheet('Πρόγραμμα');
+      ws.addRow([title]); ws.getRow(1).font = { bold: true, size: 14 };
+      var r2 = ['Βάρδια'], r3 = [''];
+      for (var d = 0; d < P.D; d++) { r2.push(d + 1); r3.push(WD[P.dow[d]]); }
+      ws.addRow(r2); ws.addRow(r3);
+      [2, 3].forEach(function (ri) { ws.getRow(ri).eachCell(function (c, ci) { c.font = { bold: true }; c.alignment = { horizontal: 'center' }; c.border = border; if (ci > 1 && (P.weekend[ci - 2] || P.holiday[ci - 2])) c.fill = fill(P.holiday[ci - 2] ? '#FBE8DA' : '#E9EEF5'); }); });
+      P.shifts.forEach(function (s, si) {
+        var sh = store.cfg.shifts[si], maxK = 0;
+        P.cells.forEach(function (c) { if (c.s === si) maxK = Math.max(maxK, c.k + 1); });
+        for (var k = 0; k < maxK; k++) {
+          var row = [s.name + (maxK > 1 ? ' ' + (k + 1) : '') + ' ' + sh.start + '-' + sh.end], colors = [];
+          for (var d2 = 0; d2 < P.D; d2++) {
+            var ci = -1; P.cellsByDay[d2].forEach(function (c) { if (P.cells[c].s === si && P.cells[c].k === k) ci = c; });
+            var p = ci >= 0 ? P.init[ci] : -1, st = p >= 0 ? staffById(P.persons[p].id) : null;
+            row.push(st ? st.code : ''); colors.push(st ? st.color : null);
+          }
+          var R = ws.addRow(row);
+          R.getCell(1).font = { bold: true }; R.getCell(1).border = border;
+          colors.forEach(function (col, i) { var c = R.getCell(i + 2); c.alignment = { horizontal: 'center' }; c.border = border; if (col) { c.fill = fill(col); c.font = fontOn(col); } });
+        }
+      });
+      var li = E.leaveIndex(store.cfg), lrow = ['Άδειες'];
+      for (var d3 = 0; d3 < P.D; d3++) {
+        lrow.push(store.cfg.staff.filter(function (st) { var e = li[st.id + '|' + E.ymd(ui.y, ui.m, d3 + 1)]; return e && e.kind !== 3; }).map(function (st) { return st.code; }).join(' '));
+      }
+      var LR = ws.addRow(lrow); LR.eachCell(function (c) { c.border = border; c.alignment = { horizontal: 'center', wrapText: true }; c.font = { color: { argb: 'FFC22F2F' }, bold: true }; });
+      ws.getColumn(1).width = 22; for (var cI = 2; cI <= P.D + 1; cI++) ws.getColumn(cI).width = 5.2;
+      ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 3 }];
+      // sheet 2 by person
+      var wp = wb.addWorksheet('Ανά άτομο');
+      wp.addRow([title]); wp.getRow(1).font = { bold: true, size: 14 };
+      var hr = ['Άτομο']; for (var d4 = 0; d4 < P.D; d4++) hr.push((d4 + 1) + ' ' + WD[P.dow[d4]]); hr.push('Ώρες', 'Στόχος', 'Νύχτες', 'ΣΚ', 'Αργίες');
+      var H = wp.addRow(hr); H.eachCell(function (c) { c.font = { bold: true }; c.border = border; c.alignment = { horizontal: 'center', wrapText: true }; });
+      P.persons.forEach(function (p, pi) {
+        var st = staffById(p.id), x = an.per[pi]; if (!P.active[pi] && !x.hours) return;
+        var row = [st.code + (st.name ? ' ' + st.name : '')], cols = [];
+        for (var d5 = 0; d5 < P.D; d5++) {
+          var sh = null; P.cellsByDay[d5].forEach(function (c) { if (P.init[c] === pi) sh = store.cfg.shifts[P.cells[c].s]; });
+          var lv = P.leave[pi * P.D + d5];
+          row.push(sh ? sh.code : (lv && lv !== 3 ? leaveAbbr(P.leaveName[pi * P.D + d5]) : '')); cols.push(sh ? sh.color : null);
+        }
+        row.push(x.hours, Math.round(x.target), x.nights, x.weekend, x.holiday);
+        var R2 = wp.addRow(row);
+        R2.eachCell(function (c) { c.border = border; c.alignment = { horizontal: 'center' }; });
+        R2.getCell(1).fill = fill(st.color); R2.getCell(1).font = fontOn(st.color); R2.getCell(1).alignment = { horizontal: 'left' };
+        cols.forEach(function (col, i) { if (col) { var c = R2.getCell(i + 2); c.fill = fill(col); c.font = fontOn(col); } });
+      });
+      wp.getColumn(1).width = 24; for (var c2 = 2; c2 <= P.D + 1; c2++) wp.getColumn(c2).width = 5.6;
+      wp.views = [{ state: 'frozen', xSplit: 1, ySplit: 2 }];
+      return wb.xlsx.writeBuffer();
+    }).then(function (buf) {
+      return saveFile('Προγραμμα_' + curKey() + '.xlsx', buf);
+    }).catch(function () { toast('Δεν φορτώθηκε η βιβλιοθήκη Excel. Δοκίμασε ξανά.'); });
+  }
+
+  render();
+  connect();
+})();
+</script>
+
+</body>
+</html>
