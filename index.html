@@ -9,7 +9,7 @@
   // Βαρδιολόγιο: έκδοση για GitHub Pages με αποθήκευση σε Google Sheet.
   window.VARDIOLOGIO_REMOTE = true;
   // Προαιρετικά: βάλε εδώ τη διεύθυνση του Apps Script (…/exec) για να μη ζητείται στη σύνδεση.
-  window.VARDIOLOGIO_API = "https://script.google.com/macros/s/AKfycbyxB8GwYxbDDByckDe-zYcTcT_QieBWz4kUnH_S2wIWVw02uR54D8D-N2c9iwx9HKNq/exec";
+  window.VARDIOLOGIO_API = "https://script.google.com/macros/s/AKfycbxz6z_6OoNP9otRMeBIWI7nVBKIiz9aayUrHDYn_WxfYN5DuB6jG_x7SfELk30mJQkm/exec";
 </script>
 </head>
 <body>
@@ -1091,7 +1091,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
   var REMOTE = !!window.VARDIOLOGIO_REMOTE;
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
-  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
+  var R = { transport: '', api: lsGet('vardiologio.api') || window.VARDIOLOGIO_API || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
   // All calls are GET (?a=...). Google blocks cross-site POST to some Apps Script deployments; GET always gets through.
   // Transport: fetch without cookies; if the browser blocks that, fall back to JSONP (<script>).
   function qs(p) { return Object.keys(p).filter(function (k) { return p[k] != null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&'); }
@@ -1202,12 +1202,12 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     R.api = api; ui.login.busy = true; ui.login.msg = ''; render();
     apiCall({ action: 'login', password: pw || '' }).then(function (res) {
       if (res.token) {
-        R.token = res.token; lsSet('vardiologio.token', res.token); if (!window.VARDIOLOGIO_API) lsSet('vardiologio.api', api);
+        R.token = res.token; lsSet('vardiologio.token', res.token); if (api !== window.VARDIOLOGIO_API) lsSet('vardiologio.api', api); else lsSet('vardiologio.api', null);
         ui.login = null; remoteLoad(); return;
       }
       var m = { wrong_password: 'Λάθος κωδικός.', locked: 'Πολλές λάθος προσπάθειες. Δοκίμασε ξανά σε 15 λεπτά.', no_password: 'Δεν έχει οριστεί κωδικός. Άνοιξε το Google Sheet → μενού «Βαρδιολόγιο» → «Ορισμός κωδικού σύνδεσης».' };
       ui.login.busy = false; ui.login.msg = m[res.error] || ('Σφάλμα: ' + (res.message || res.error)); render();
-    }).catch(function (e) { ui.login.busy = false; ui.login.msg = 'Δεν απάντησε ο server: ' + (e && e.message || e); render(); });
+    }).catch(function (e) { ui.login.busy = false; ui.login.showApi = true; ui.login.msg = 'Δεν απάντησε ο server. Επικόλλησε τη διεύθυνση από το Apps Script (Deploy → Manage deployments → Web app → Αντιγραφή) και ξαναδοκίμασε.'; render(); });
   }
   function doLogout() {
     var t = R.token; R.token = ''; R.ready = false; lsSet('vardiologio.token', null);
@@ -1218,7 +1218,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     var L = ui.login;
     return '<div class="loginwrap"><form class="card login" id="loginform" autocomplete="on"><div class="bd" style="display:grid;gap:14px">' +
       '<h1 style="font-size:22px">Βαρδιολόγιο</h1><p class="help" style="margin:0">Σύνδεση για πρόσβαση στο πρόγραμμα. Τα δεδομένα αποθηκεύονται στο Google Sheet σου.</p>' +
-      (window.VARDIOLOGIO_API ? '' : '<label class="f">Διεύθυνση server (Apps Script)<input type="url" id="lg_api" value="' + esc(R.api) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="url"></label>') +
+      (window.VARDIOLOGIO_API && !L.showApi ? '' : '<label class="f">Διεύθυνση server (Apps Script)<input type="url" id="lg_api" value="' + esc(R.api) + '" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="url"></label>') +
       '<label class="f">Κωδικός<input type="password" id="lg_pw" autocomplete="current-password" autofocus></label>' +
       (L.msg ? '<div class="help" style="color:var(--danger)">' + esc(L.msg) + '</div>' : '') +
       '<button class="btn primary" type="submit"' + (L.busy ? ' disabled' : '') + '>' + (L.busy ? 'Σύνδεση…' : 'Σύνδεση') + '</button>' +
@@ -1471,7 +1471,8 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       '<button class="btn primary" data-act="gen" data-v="fresh" title="Φτιάχνει νέο πρόγραμμα για τις μη κλειδωμένες βάρδιες">Αυτόματη δημιουργία</button>' +
       '<button class="btn" data-act="gen" data-v="repair" title="Διορθώνει παραβάσεις αλλάζοντας όσο γίνεται λιγότερες βάρδιες"' + (filled ? '' : ' disabled') + '>Διόρθωση με ελάχιστες αλλαγές</button>' +
       '<button class="btn" data-act="undo"' + (undoStack.length ? '' : ' disabled') + '>Αναίρεση</button>' +
-      '<button class="btn" data-act="pdf">PDF</button>' +
+      '<button class="btn" data-act="pdf" data-v="dark" title="PDF με σκούρο φόντο">PDF σκούρο</button>' +
+      '<button class="btn" data-act="pdf" data-v="light" title="PDF με λευκό φόντο, κατάλληλο για εκτύπωση">PDF λευκό</button>' +
       '<button class="btn" data-act="xlsx">Excel</button>' +
       '</div>';
     if (!filled) h += '<div class="emptybanner"><strong>Ο ' + MONTHS[ui.m - 1].toLowerCase() + ' είναι κενός.</strong><span>Πάτα «Αυτόματη δημιουργία» και το πρόγραμμα θα συμπληρωθεί με βάση το προσωπικό, τις άδειες, τους κανόνες και τις τελευταίες μέρες του προηγούμενου μήνα.</span></div>';
@@ -2230,7 +2231,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       case 'cfyes': { var fn = ui.confirm.fn; ui.confirm = null; fn(); render(); break; }
       case 'cfno': ui.confirm = null; render(); break;
       case 'xlsx': exportXlsx(); break;
-      case 'pdf': exportPdf(); break;
+      case 'pdf': exportPdf(v); break;
       case 'qleave': {
         var ty = document.getElementById('qltype').value, dd = E.ymd(ui.y, ui.m, ui.sel.d + 1);
         cfg.leaves.push({ id: uid('l'), staffId: ui.sel.p, type: ty, from: dd, to: dd, note: '' });
@@ -2403,17 +2404,24 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     var a = p(hex), b = p(base);
     return '#' + a.map(function (v, i) { return ('0' + Math.round(b[i] + (v - b[i]) * t).toString(16)).slice(-2); }).join('');
   }
-  function buildPdf() {
+  var PDF_THEMES = {
+    dark: { BG: '#121212', CELL: '#1A1A1A', OFF: '#151515', TXT: '#F4F4F4', MUT: '#8E8E8E', DIM: '#3C3C3C', ACC: '#1DCF8E', RED: '#FF6B6B',
+      TOP: '#BDBDBD', SUB: '#A8A8A8', LEG: '#CFCFCF', MIXB: '#1E1E1E', MIXT: 0.32, UNC: '#2A1717', LEAVE: '#202020', PCARD: '#1C1C1C' },
+    light: { BG: '#FFFFFF', CELL: '#F4F4F4', OFF: '#FAFAFA', TXT: '#181818', MUT: '#6B6B6B', DIM: '#C9C9C9', ACC: '#00975F', RED: '#D93C3C',
+      TOP: '#5E5E5E', SUB: '#6B6B6B', LEG: '#3A3A3A', MIXB: '#FFFFFF', MIXT: 0.2, UNC: '#FBE3E3', LEAVE: '#FFFFFF', PCARD: '#F4F4F4' }
+  };
+  function buildPdf(theme) {
     var cur = current(), P = cur.P, an = cur.an, cfg = store.cfg;
-    var BG = '#121212', CELL = '#1A1A1A', OFF = '#151515', LINE = '#2C2C2C', TXT = '#F4F4F4', MUT = '#8E8E8E', DIM = '#3C3C3C', ACC = '#1DCF8E', RED = '#FF6B6B';
+    var T = PDF_THEMES[theme] || PDF_THEMES.dark;
+    var BG = T.BG, CELL = T.CELL, OFF = T.OFF, TXT = T.TXT, MUT = T.MUT, DIM = T.DIM, ACC = T.ACC, RED = T.RED;
     var W = 841.89, H = 595.28;
     var WDH = ['ΔΕΥ', 'ΤΡΙ', 'ΤΕΤ', 'ΠΕΜ', 'ΠΑΡ', 'ΣΑΒ', 'ΚΥΡ'];
     var li = E.leaveIndex(cfg);
     var ltypes = {}; cfg.leaveTypes.forEach(function (t) { ltypes[t.name] = t; });
     function who(st) { return st ? (st.name || st.code) : ''; }
     function card(stripe, top, main, sub, fill) {
-      var st = [{ text: top, fontSize: 6.6, color: '#BDBDBD' }, { text: main, fontSize: 9.2, bold: true, color: TXT, margin: [0, 1.5, 0, 0] }];
-      if (sub) st.push({ text: sub, fontSize: 6.4, color: '#A8A8A8', margin: [0, 1, 0, 0] });
+      var st = [{ text: top, fontSize: 6.6, color: T.TOP }, { text: main, fontSize: 9.2, bold: true, color: TXT, margin: [0, 1.5, 0, 0] }];
+      if (sub) st.push({ text: sub, fontSize: 6.4, color: T.SUB, margin: [0, 1, 0, 0] });
       return {
         table: { widths: [2.5, '*'], body: [[{ text: '', fillColor: stripe }, { stack: st, fillColor: fill }]] },
         layout: { hLineWidth: function () { return 0; }, vLineWidth: function () { return 0; },
@@ -2428,7 +2436,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
         : cfg.staff.filter(function (s) { return s.active !== false; }).map(function (s) { return { color: s.color, label: who(s) }; });
       if (usedG.length && cfg.staff.some(function (s) { return s.active !== false && !groupOf(s); })) items.push({ color: '#8E8E8E', label: 'Χωρίς ομάδα' });
       var legend = items.map(function (it) {
-        return { columns: [{ canvas: [{ type: 'rect', x: 0, y: 2, w: 7, h: 7, r: 1.5, color: it.color }], width: 11 }, { text: it.label, fontSize: 7.5, color: '#CFCFCF', width: 'auto' }], width: 'auto', columnGap: 0 };
+        return { columns: [{ canvas: [{ type: 'rect', x: 0, y: 2, w: 7, h: 7, r: 1.5, color: it.color }], width: 11 }, { text: it.label, fontSize: 7.5, color: T.LEG, width: 'auto' }], width: 'auto', columnGap: 0 };
       });
       return { columns: [
         { width: '*', stack: [
@@ -2450,16 +2458,16 @@ if (typeof module !== 'undefined') module.exports = makeSample;
         P.cellsByDay[d].forEach(function (c) {
           if (P.cells[c].s !== si) return;
           var pi = P.init[c], tm = s.start + ' – ' + s.end;
-          if (pi < 0) { if (P.cells[c].req) stack.push(card(RED, tm, 'Ακάλυπτη', s.name, '#2A1717')); return; }
+          if (pi < 0) { if (P.cells[c].req) stack.push(card(RED, tm, 'Ακάλυπτη', s.name, T.UNC)); return; }
           var st = staffById(P.persons[pi].id), g = groupOf(st), col = g ? g.color : st.color;
-          stack.push(card(col, tm, who(st), g ? g.name : s.name, mixHex(col, '#1E1E1E', 0.32)));
+          stack.push(card(col, tm, who(st), g ? g.name : s.name, mixHex(col, T.MIXB, T.MIXT)));
         });
       });
       cfg.staff.forEach(function (st) {
         var e = li[st.id + '|' + E.ymd(ui.y, ui.m, dnum)];
         if (!e || e.kind === 3) return;
         var t = ltypes[e.type];
-        stack.push(card(t && t.color ? t.color : RED, e.type, who(st), null, '#202020'));
+        stack.push(card(t && t.color ? t.color : RED, e.type, who(st), null, T.LEAVE));
       });
       return { stack: stack, fillColor: CELL };
     }
@@ -2506,7 +2514,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       var kp = [[x.hours, 'ώρες'], [x.nights, 'νύχτες'], [x.weekend, 'ΣΚ'], [x.holiday, 'αργίες']].map(function (q) {
         return { stack: [{ text: String(q[0]), fontSize: 13, bold: true, color: TXT }, { text: q[1], fontSize: 6.5, color: MUT }], width: 'auto' };
       });
-      cards.push({ unbreakable: true, margin: [0, 0, 0, 10], table: { widths: [3, '*'], body: [[{ text: '', fillColor: gcol }, { fillColor: '#1C1C1C', stack: [
+      cards.push({ unbreakable: true, margin: [0, 0, 0, 10], table: { widths: [3, '*'], body: [[{ text: '', fillColor: gcol }, { fillColor: T.PCARD, stack: [
         { text: [{ text: who(st), bold: true, fontSize: 11, color: TXT }, { text: st.name ? '  ' + st.code : '', fontSize: 8, color: MUT }, { text: grp ? '   ' + grp.name.toUpperCase() : '', fontSize: 7, bold: true, color: gcol, characterSpacing: 1 }] },
         { columns: kp, columnGap: 16, margin: [0, 6, 0, 6] }
       ].concat(lines) }]] }, layout: { hLineWidth: function () { return 0; }, vLineWidth: function () { return 0; }, paddingLeft: function (i) { return i ? 10 : 0; }, paddingRight: function (i) { return i ? 10 : 0; }, paddingTop: function () { return 9; }, paddingBottom: function () { return 9; } } });
@@ -2522,22 +2530,22 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       defaultStyle: { font: 'Roboto', fontSize: 8.5, color: TXT, lineHeight: 1.08 },
       footer: function (page, pages) {
         return { margin: [26, 8, 26, 0], columns: [
-          { text: [{ text: '■ ', color: ACC }, { text: 'Βαρδιολόγιο · ' + created, color: MUT }], fontSize: 6.5 },
+          { text: [{ text: '• ', color: ACC, bold: true }, { text: 'Βαρδιολόγιο · ' + created, color: MUT }], fontSize: 6.5 },
           { text: page + ' / ' + pages, fontSize: 6.5, color: MUT, alignment: 'right' }
         ] };
       },
       content: content
     };
   }
-  function exportPdf() {
+  function exportPdf(theme) {
     toast('Ετοιμάζεται το PDF…');
     var base = 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/';
     (window.pdfMake && window.pdfMake.vfs ? Promise.resolve() : loadScript(base + 'pdfmake.min.js').then(function () { return loadScript(base + 'vfs_fonts.js'); }))
       .then(function () {
-        var dd = buildPdf();
+        var dd = buildPdf(theme);
         return new Promise(function (res) { window.pdfMake.createPdf(dd).getBuffer(function (buf) { res(buf); }); });
       }).then(function (buf) {
-        return saveFile('Προγραμμα_' + curKey() + '.pdf', buf);
+        return saveFile('Προγραμμα_' + curKey() + (theme === 'light' ? '_λευκο' : '') + '.pdf', buf);
       }).catch(function () { toast('Δεν φορτώθηκε η βιβλιοθήκη PDF. Έλεγξε τη σύνδεση και δοκίμασε ξανά.'); });
   }
   window.__buildPdf = buildPdf;
