@@ -1172,7 +1172,8 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       if (R.again) { R.again = false; remoteSave(); } else { lsSet('vardiologio.unsaved', null); setSave('Αποθηκεύτηκε στο Google Sheet'); }
     }).catch(function (e) {
       R.pending = false; R.again = false;
-      setSave('Δεν αποθηκεύτηκε ακόμα. Οι αλλαγές κρατήθηκαν εδώ, νέα προσπάθεια σε λίγα δευτερόλεπτα…');
+      var why = String(e && e.message || e || '');
+      setSave('Δεν αποθηκεύτηκε ακόμα (αιτία: ' + why + '). Οι αλλαγές κρατήθηκαν εδώ, νέα προσπάθεια σε λίγα δευτερόλεπτα…');
       clearTimeout(R.retry); R.retry = setTimeout(function () { remoteSave(); }, 8000);
     });
   }
