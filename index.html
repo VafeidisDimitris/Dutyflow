@@ -1133,7 +1133,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     if (body.action === 'load') return getJSON({ a: 'load', t: body.token });
     if (body.action === 'save') {
       return packStore(body.store).then(function (pk) {
-        var CH = 6000, parts = [], id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+        var CH = 4000, parts = [], id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
         for (var i = 0; i < pk.d.length; i += CH) parts.push(pk.d.slice(i, i + CH));
         var idx = 0, failed = null;
         function worker() {
@@ -1144,10 +1144,22 @@ if (typeof module !== 'undefined') module.exports = makeSample;
             return worker();
           });
         }
-        var pool = []; for (var k = 0; k < Math.min(4, parts.length); k++) pool.push(worker());
-        return Promise.all(pool).then(function () {
+        // one upload at a time: Google rejects bursts of parallel calls
+        return worker().then(function () {
           if (failed) return failed;
-          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '', c: R.client });
+          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '', c: R.client })
+            .catch(function (err) {
+              // the save may have gone through and only the answer got lost: ask the server
+              var tries = 0;
+              function ask() {
+                tries++;
+                return new Promise(function (r) { setTimeout(r, 2500); })
+                  .then(function () { return getJSON({ a: 'st', t: body.token, id: id }); })
+                  .then(function (r) { if (r && !r.pending) return r; if (tries < 6) return ask(); throw err; },
+                        function () { if (tries < 6) return ask(); throw err; });
+              }
+              return ask();
+            });
         });
       });
     }
