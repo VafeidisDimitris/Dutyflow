@@ -1091,7 +1091,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
   var REMOTE = !!window.VARDIOLOGIO_REMOTE;
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
-  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '', retry: null,
+  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '', retry: null, sent: [],
     client: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) };
   // All calls are GET (?a=...). Google blocks cross-site POST to some Apps Script deployments; GET always gets through.
   // Transport: fetch without cookies; if the browser blocks that, fall back to JSONP (<script>).
@@ -1132,8 +1132,12 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     if (body.action === 'logout') return getJSON({ a: 'logout', t: body.token });
     if (body.action === 'load') return getJSON({ a: 'load', t: body.token });
     if (body.action === 'save') {
-      return packStore(body.store).then(function (pk) {
-        var CH = 4000, parts = [], id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      var id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      R.sent.push(id); if (R.sent.length > 50) R.sent.shift();
+      // the save carries its own id, so we can later recognise it in the Sheet
+      var payload = { cfg: Object.assign({}, body.store.cfg, { _saveId: id }), months: body.store.months };
+      return packStore(payload).then(function (pk) {
+        var CH = 4000, parts = [];
         for (var i = 0; i < pk.d.length; i += CH) parts.push(pk.d.slice(i, i + CH));
         var idx = 0, failed = null;
         function worker() {
@@ -1144,21 +1148,27 @@ if (typeof module !== 'undefined') module.exports = makeSample;
             return worker();
           });
         }
-        // one upload at a time: Google rejects bursts of parallel calls
         return worker().then(function () {
           if (failed) return failed;
-          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '', c: R.client })
+          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '' })
+            .then(function (r) {
+              // a repeated save finds its upload already used: the first copy went through, so check the Sheet
+              if (r && r.error === 'upload_incomplete') throw new Error('upload_incomplete');
+              return r;
+            })
             .catch(function (err) {
-              // the save may have gone through and only the answer got lost: ask the server
+              // the save may have reached the Sheet and only the answer got lost: look at the Sheet
               var tries = 0;
-              function ask() {
+              function check() {
                 tries++;
-                return new Promise(function (r) { setTimeout(r, 2500); })
-                  .then(function () { return getJSON({ a: 'st', t: body.token, id: id }); })
-                  .then(function (r) { if (r && !r.pending) return r; if (tries < 6) return ask(); throw err; },
-                        function () { if (tries < 6) return ask(); throw err; });
+                return new Promise(function (r) { setTimeout(r, 2000 * tries); })
+                  .then(function () { return getJSON({ a: 'load', t: body.token }); })
+                  .then(function (r) {
+                    if (r && r.store && r.store.cfg && r.store.cfg._saveId === id) return { ok: true, hash: r.hash };
+                    if (tries < 3) return check(); throw err;
+                  }, function () { if (tries < 3) return check(); throw err; });
               }
-              return ask();
+              return check();
             });
         });
       });
@@ -1175,6 +1185,10 @@ if (typeof module !== 'undefined') module.exports = makeSample;
       R.pending = false;
       if (res.error === 'auth') { R.ready = false; showLogin('Η σύνδεση έληξε. Συνδέσου ξανά· οι αλλαγές σου κρατήθηκαν.'); return; }
       if (res.error) throw new Error(res.message || res.error);
+      if (res.conflict && res.store && res.store.cfg && R.sent.indexOf(res.store.cfg._saveId) >= 0) {
+        // the Sheet holds an earlier save of this same tab whose answer got lost: not a real conflict
+        R.hash = res.hash; R.again = false; remoteSave(); return;
+      }
       if (res.conflict) {
         // never throw away what the user typed: ask
         R.again = false; ui.conflict = { store: res.store, hash: res.hash };
