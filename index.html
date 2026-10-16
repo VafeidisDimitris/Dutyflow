@@ -1091,7 +1091,8 @@ if (typeof module !== 'undefined') module.exports = makeSample;
   var REMOTE = !!window.VARDIOLOGIO_REMOTE;
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
-  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
+  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '', retry: null,
+    client: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) };
   // All calls are GET (?a=...). Google blocks cross-site POST to some Apps Script deployments; GET always gets through.
   // Transport: fetch without cookies; if the browser blocks that, fall back to JSONP (<script>).
   function qs(p) { return Object.keys(p).filter(function (k) { return p[k] != null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&'); }
@@ -1146,32 +1147,44 @@ if (typeof module !== 'undefined') module.exports = makeSample;
         var pool = []; for (var k = 0; k < Math.min(4, parts.length); k++) pool.push(worker());
         return Promise.all(pool).then(function () {
           if (failed) return failed;
-          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '' });
+          return getJSON({ a: 'save', t: body.token, id: id, n: parts.length, z: pk.z, h: body.baseHash || '', c: R.client });
         });
       });
     }
     return Promise.reject(new Error('bad action'));
   }
-  function remoteSave() {
-    if (!R.ready) return;
+  function remoteSave(force) {
+    if (!R.ready || ui.conflict) return;
     if (R.pending) { R.again = true; return; }
+    clearTimeout(R.retry);
     R.pending = true; setSave('Αποθήκευση στο Google Sheet…');
     lsSet('vardiologio.unsaved', '1');
-    apiCall({ action: 'save', token: R.token, store: store, baseHash: R.hash }).then(function (res) {
+    apiCall({ action: 'save', token: R.token, store: store, baseHash: force ? '' : R.hash }).then(function (res) {
       R.pending = false;
       if (res.error === 'auth') { R.ready = false; showLogin('Η σύνδεση έληξε. Συνδέσου ξανά· οι αλλαγές σου κρατήθηκαν.'); return; }
       if (res.error) throw new Error(res.message || res.error);
       if (res.conflict) {
-        R.hash = res.hash; store = migrate(res.store); saveLocal(); lsSet('vardiologio.unsaved', null); render();
-        toast('Το Google Sheet είχε αλλάξει από αλλού (π.χ. AppSheet ή με το χέρι). Φορτώθηκαν τα νέα δεδομένα· η τελευταία σου αλλαγή δεν αποθηκεύτηκε, κάν’ την ξανά.', 9000);
-        setSave('Φορτώθηκαν νέα δεδομένα από το Sheet'); return;
+        // never throw away what the user typed: ask
+        R.again = false; ui.conflict = { store: res.store, hash: res.hash };
+        setSave('Χρειάζεται επιλογή: το Sheet άλλαξε από αλλού'); render(); return;
       }
       R.hash = res.hash;
       if (R.again) { R.again = false; remoteSave(); } else { lsSet('vardiologio.unsaved', null); setSave('Αποθηκεύτηκε στο Google Sheet'); }
     }).catch(function (e) {
-      R.pending = false;
-      setSave('Δεν αποθηκεύτηκε (χωρίς σύνδεση;). Κρατήθηκε εδώ και θα ξαναδοκιμάσει στην επόμενη αλλαγή.');
+      R.pending = false; R.again = false;
+      setSave('Δεν αποθηκεύτηκε ακόμα. Οι αλλαγές κρατήθηκαν εδώ, νέα προσπάθεια σε λίγα δευτερόλεπτα…');
+      clearTimeout(R.retry); R.retry = setTimeout(function () { remoteSave(); }, 8000);
     });
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (REMOTE && R.ready && (R.pending || lsGet('vardiologio.unsaved'))) { e.preventDefault(); e.returnValue = ''; }
+  });
+  function viewConflict() {
+    return '<div class="modal" role="dialog" aria-modal="true"><div class="box" style="width:min(560px,100%)"><div class="hd"><h2>Το Google Sheet άλλαξε από αλλού</h2></div><div class="bd" style="display:grid;gap:12px">' +
+      '<p style="margin:0">Από τη στιγμή που άνοιξες τη σελίδα, κάποιος άλλαξε το Sheet: άλλη καρτέλα ή συσκευή με ανοιχτό το Βαρδιολόγιο, ή αλλαγή με το χέρι στο Sheet. Οι αλλαγές σου <b>δεν χάθηκαν</b>· διάλεξε ποια εκδοχή θα μείνει.</p>' +
+      '<div class="help">Αν έχεις το Βαρδιολόγιο ανοιχτό και σε άλλη καρτέλα ή συσκευή, κλείσ’ το εκεί για να μην ξαναγίνει.</div>' +
+      '<div class="row end"><button class="btn" data-act="cfltheirs">Φόρτωσε τα δεδομένα του Sheet</button><button class="btn primary" data-act="cflmine">Κράτα τις δικές μου αλλαγές</button></div>' +
+      '</div></div></div>';
   }
   function showLogin(msg) { ui.login = { msg: msg || '', busy: false }; render(); }
   function remoteLoad() {
@@ -1417,6 +1430,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
     if (ui.gen) html += viewGen();
     if (ui.confirm) html += '<div class="modal" role="dialog" aria-modal="true"><div class="box" style="width:min(440px,100%)"><div class="hd"><h2>Επιβεβαίωση</h2></div><div class="bd"><p style="margin:0">' + esc(ui.confirm.text) + '</p><div class="row end"><button class="btn" data-act="cfno">Άκυρο</button><button class="btn primary" data-act="cfyes">' + esc(ui.confirm.yes || 'Συνέχεια') + '</button></div></div></div></div>';
     if (REMOTE && ui.onboard) html += viewOnboard();
+    if (REMOTE && ui.conflict) html += viewConflict();
     html += '<div id="toastroot"></div>';
     var sx = window.scrollX, sy = window.scrollY, gw = document.querySelector('.gridwrap'), gx = gw ? gw.scrollLeft : 0;
     var db2 = document.querySelector('.drawer .dbd'), dy = db2 ? db2.scrollTop : 0;
@@ -2313,6 +2327,8 @@ if (typeof module !== 'undefined') module.exports = makeSample;
         cfg.leaveTypes = cfg.leaveTypes.filter(function (x) { return x.id !== tid; }); markCfg(); render(); break;
       }
       case 'logout': doLogout(); break;
+      case 'cflmine': ui.conflict = null; render(); remoteSave(true); break;
+      case 'cfltheirs': { var c0 = ui.conflict; ui.conflict = null; R.hash = c0.hash; store = migrate(c0.store); saveLocal(); lsSet('vardiologio.unsaved', null); render(); setSave('Φορτώθηκαν τα δεδομένα του Google Sheet'); break; }
       case 'onboardsample': ui.onboard = false; store = migrate(makeSample()); dirtyCfg = true; queueSave(); render(); break;
       case 'exportjson': saveFile('vardiologio-' + E.fmt(today) + '.json', JSON.stringify(store, null, 1)); break;
       case 'resetsample': askConfirm('Να αντικατασταθούν όλα τα δεδομένα με το παράδειγμα; Κράτα πρώτα αντίγραφο ασφαλείας αν τα χρειάζεσαι.', 'Επαναφορά', function () {
