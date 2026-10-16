@@ -1091,7 +1091,7 @@ if (typeof module !== 'undefined') module.exports = makeSample;
   var REMOTE = !!window.VARDIOLOGIO_REMOTE;
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
-  var R = { transport: '', api: lsGet('vardiologio.api') || window.VARDIOLOGIO_API || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
+  var R = { transport: '', api: window.VARDIOLOGIO_API || lsGet('vardiologio.api') || '', token: lsGet('vardiologio.token') || '', hash: null, ready: false, pending: false, again: false, sheetUrl: '' };
   // All calls are GET (?a=...). Google blocks cross-site POST to some Apps Script deployments; GET always gets through.
   // Transport: fetch without cookies; if the browser blocks that, fall back to JSONP (<script>).
   function qs(p) { return Object.keys(p).filter(function (k) { return p[k] != null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&'); }
